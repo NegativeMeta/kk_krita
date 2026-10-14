@@ -1,0 +1,23 @@
+# Build outputs
+bin/
+obj/
+
+# Secrets
+.env
+*.pfx
+*.key
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python stuff
+__pycache__/
+*.pyc
+*.pyo
+
+# Studio temp
+UserData/krita_bridge/capture.status

@@ -1,0 +1,20 @@
+Install steps:
+
+CharaStudio plugin install
+-----------------------------
+1. dotnet build -c Release -o deploy/KK_KritaBridge
+2. Copy deploy/KK_KritaBridge/KK_KritaBridge.dll to:
+   E:\Users\johin\Code_Library_Old\Koikatsu BetterRepack RX22\BepInEx\plugins\KK_KritaBridge\
+
+Krita script install
+---------------------
+1. Copy src/py/KoikatsuBridge.py to:
+   %AppData%\krita\scripts\KoikatsuBridge.py
+2. Start Krita with: krita --script KoikatsuBridge.py
+   (or use deploy/run-bridge.bat)
+
+Usage
+------
+1. Start CharaStudio; start Krita normally.
+2. Press F12 in CharaStudio.
+3. The frame appears as a new layer in the active Krita document.
