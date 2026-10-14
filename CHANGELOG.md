@@ -1,5 +1,11 @@
 # ChangeLog
 
+## v1.2.0 (captura limpia)
+- Render solo de Camera.main a RenderTexture (la UI IMGUI no se dibuja ahi).
+- Canvas UGUI apagados durante el render y restaurados despues (estilo Screencap).
+- Log de todas las camaras (nombre/depth/rect) para diagnosticar angulo.
+- Nota: con el juego abierto el DLL queda bloqueado; cerrar el juego para actualizar.
+
 ## v1.1.5 (Krita 6 ABC completo)
 - Autorregistro con Krita.instance().addExtension (Krita 6 no llama a createExtension).
 - Overrides setup() y createActions() exigidos por la clase base abstracta.
