@@ -1,6 +1,7 @@
 import os
 import socket
 import threading
+import time
 
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QMessageBox
@@ -9,6 +10,16 @@ from krita import Krita, Extension
 
 BRIDGE_HOST = "127.0.0.1"
 BRIDGE_PORT = 9184
+BRIDGE_DIR = "E:/Users/johin/Code_Library_Old/Koikatsu BetterRepack RX22/UserData/krita_bridge"
+LOG_PATH = BRIDGE_DIR + "/kk_bridge.log"
+
+
+def _log(msg):
+    try:
+        with open(LOG_PATH, "a", encoding="utf-8") as f:
+            f.write(msg + "\n")
+    except Exception:
+        pass
 
 
 class _Receiver(QtCore.QObject):
@@ -22,13 +33,15 @@ class _Receiver(QtCore.QObject):
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             sock.bind((BRIDGE_HOST, BRIDGE_PORT))
             sock.listen(1)
-        except OSError:
+        except OSError as ex:
+            _log("bind fallo: %s" % ex)
             try:
                 sock.close()
             except Exception:
                 pass
             return
         self._sock = sock
+        _log("escuchando en %s:%d" % (BRIDGE_HOST, BRIDGE_PORT))
         thread = threading.Thread(target=self._accept_loop)
         thread.daemon = True
         thread.start()
@@ -48,6 +61,7 @@ class _Receiver(QtCore.QObject):
             except Exception:
                 pass
             if data:
+                _log("recibido: %s" % data[:200])
                 self.dataReady.emit(data)
 
 
@@ -55,12 +69,14 @@ class KoikatsuBridgeExtension(Extension):
 
     def __init__(self, parent):
         super(KoikatsuBridgeExtension, self).__init__(parent)
+        _log("plugin cargado")
         try:
             receiver = _Receiver()
             receiver.dataReady.connect(self.importCapture)
             # keep a reference alive on the extension instance
             self._receiver = receiver
-        except Exception:
+        except Exception as ex:
+            _log("receiver fallo: %s" % ex)
             self._receiver = None
 
     @QtCore.pyqtSlot(str)
@@ -68,11 +84,18 @@ class KoikatsuBridgeExtension(Extension):
         if not payload.startswith("IMPORT "):
             return
         path = payload[7:].strip()
+        # CaptureScreenshot escribe al final del frame: esperar hasta 3s
+        for _ in range(12):
+            if path and os.path.exists(path):
+                break
+            time.sleep(0.25)
         if not path or not os.path.exists(path):
+            _log("falta archivo: %s" % path)
             QMessageBox.warning(None, "KK Bridge", "No se encontro la captura:\n%s" % path)
             return
         doc = Krita.instance().activeDocument()
         if doc is None:
+            _log("sin documento activo")
             QMessageBox.warning(None, "KK Bridge", "No hay documento activo en Krita.")
             return
         try:
@@ -90,8 +113,10 @@ class KoikatsuBridgeExtension(Extension):
             except Exception:
                 pass
         except Exception as ex:
+            _log("import fallo: %s" % ex)
             QMessageBox.warning(None, "KK Bridge", "No se pudo importar:\n%s" % ex)
             return
+        _log("import ok: %s" % path)
         QMessageBox.information(None, "KK Bridge", "Frame importado como capa nueva.")
 
 

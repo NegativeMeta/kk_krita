@@ -1,5 +1,10 @@
 # ChangeLog
 
+## v1.1.1 (connection diagnostics)
+- C#: 3 intentos de TCP con pausa de 500ms; mensaje claro si Krita no escucha.
+- Krita: log en UserData/krita_bridge/kk_bridge.log (carga, escucha, recepciones, imports).
+- Krita: espera hasta 3s a que CaptureScreenshot termine de escribir el PNG.
+
 ## v1.1.0 (working install)
 - Compiled KK_KritaBridge.dll targeting net35 (v2.0.50727), matching game runtime.
 - Roslyn csc with /noconfig /nostdlib + net35 refs (no .NET SDK on machine).

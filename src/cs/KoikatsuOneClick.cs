@@ -50,14 +50,35 @@ namespace KK_KritaBridge
                 File.WriteAllText(stat,
                     "{\"ready\":true,\"file\":\"" + latest + "\",\"ts\":" + epoch.ToString() + "}");
 
-                using (var client = new TcpClient(TargetHost.Value, TargetPort.Value))
-                using (var stream = client.GetStream())
-                using (var writer = new StreamWriter(stream, Encoding.UTF8))
+                bool sent = false;
+                Exception lastError = null;
+                for (int i = 0; i < 3 && !sent; i++)
                 {
-                    writer.Write($"IMPORT {file}");
-                    writer.Flush();
+                    try
+                    {
+                        using (var client = new TcpClient(TargetHost.Value, TargetPort.Value))
+                        using (var stream = client.GetStream())
+                        using (var writer = new StreamWriter(stream, Encoding.UTF8))
+                        {
+                            writer.Write("IMPORT " + file);
+                            writer.Flush();
+                        }
+                        sent = true;
+                    }
+                    catch (Exception ex)
+                    {
+                        lastError = ex;
+                        System.Threading.Thread.Sleep(500);
+                    }
                 }
-                Logger.LogInfo("Capture sent to Krita");
+                if (sent)
+                {
+                    Logger.LogInfo("Capture sent to Krita");
+                }
+                else
+                {
+                    Logger.LogError("Send failed (Krita abierto con el plugin activo?): " + lastError.Message);
+                }
             }
             catch (Exception ex)
             {
