@@ -45,9 +45,10 @@ namespace KK_KritaBridge
 
             try
             {
-                ScreenCapture.CaptureScreenshot(file);
+                Application.CaptureScreenshot(file);
+                long epoch = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
                 File.WriteAllText(stat,
-                    $"{{\"ready\":true,\"file\":\"{latest}\",\"ts\":{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}}}");
+                    "{\"ready\":true,\"file\":\"" + latest + "\",\"ts\":" + epoch.ToString() + "}");
 
                 using (var client = new TcpClient(TargetHost.Value, TargetPort.Value))
                 using (var stream = client.GetStream())

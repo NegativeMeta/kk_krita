@@ -1,17 +1,22 @@
 Install steps:
 
-CharaStudio plugin install
+CharaStudio plugin (compilado: src/cs/KK_KritaBridge.dll, runtime net35)
 -----------------------------
-1. dotnet build -c Release -o deploy/KK_KritaBridge
-2. Copy deploy/KK_KritaBridge/KK_KritaBridge.dll to:
+1. Copy KK_KritaBridge.dll to:
    E:\Users\johin\Code_Library_Old\Koikatsu BetterRepack RX22\BepInEx\plugins\KK_KritaBridge\
+   (ya hecho en esta maquina)
+2. Rebuild (si cambias el .cs), desde src/cs con Roslyn:
+   csc /nologo /noconfig /t:library /nostdlib + refs net35 (ver deploy/KK_KritaBridge.csproj)
+   NOTA: no hay SDK para dotnet build; el Unity del juego es monolitico
+   sin ScreenCapture -> se usa Application.CaptureScreenshot.
 
-Krita script install
+Krita plugin (ya instalado)
 ---------------------
-1. Copy src/py/KoikatsuBridge.py to:
-   %AppData%\krita\scripts\KoikatsuBridge.py
-2. Start Krita with: krita --script KoikatsuBridge.py
-   (or use deploy/run-bridge.bat)
+1. Carpeta %AppData%\krita\pykrita\kk_krita_bridge\ (__init__.py + kk_krita_bridge.py)
+   + %AppData%\krita\pykrita\kk_krita_bridge.desktop (con X-Krita-AutoStart=true)
+   (ya copiado en esta maquina)
+2. Habilitado en %LocalAppData%\kritarc con enable_kk_krita_bridge=true
+   (ya escrito; si Krita lo pisa, reactivar en Configure Krita -> Python Plugin Manager)
 
 Usage
 ------

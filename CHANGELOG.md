@@ -1,5 +1,15 @@
 # ChangeLog
 
+## v1.1.0 (working install)
+- Compiled KK_KritaBridge.dll targeting net35 (v2.0.50727), matching game runtime.
+- Roslyn csc with /noconfig /nostdlib + net35 refs (no .NET SDK on machine).
+- Unity is monolithic without ScreenCapture -> Application.CaptureScreenshot.
+- DLL deployed to BepInEx/plugins/KK_KritaBridge/.
+- Krita plugin as proper pykrita module (kk_krita_bridge) with .desktop + AutoStart.
+- Signal/slot bridge (no polling); layer ops on Krita main thread.
+- Pre-enabled in kritarc (enable_kk_krita_bridge=true).
+- Python syntax verified with py_compile.
+
 ## v1.0.0 (first release)
 - Initial CharaStudio -> Krita one-click bridge.
 - Single `F12` hotkey import current scene as a new layer.
