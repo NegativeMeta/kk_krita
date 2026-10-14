@@ -171,7 +171,6 @@ try:
                 QMessageBox.warning(None, "KK Bridge", "No se pudo importar:\n%s" % ex)
                 return
             _log("import ok: %s" % path)
-            QMessageBox.information(None, "KK Bridge", "Frame importado como capa nueva.")
 
     _log("registrando extension")
     Krita.instance().addExtension(KoikatsuBridgeExtension(Krita.instance()))
