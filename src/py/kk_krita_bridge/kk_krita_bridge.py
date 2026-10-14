@@ -113,6 +113,9 @@ try:
                 _log("receiver fallo: %s" % ex)
                 self._receiver = None
 
+        def createActions(self, window):
+            pass
+
         @_Slot(str)
         def importCapture(self, payload):
             if not payload.startswith("IMPORT "):
