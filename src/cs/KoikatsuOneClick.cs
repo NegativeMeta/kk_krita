@@ -2,9 +2,11 @@ using System;
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
+using System.Collections.Generic;
 using BepInEx;
 using BepInEx.Configuration;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace KK_KritaBridge
 {
@@ -46,6 +48,28 @@ namespace KK_KritaBridge
             RenderTexture rt = new RenderTexture(w, h, 24);
             RenderTexture prevTarget = cam.targetTexture;
             RenderTexture prevActive = RenderTexture.active;
+            foreach (Camera c in Camera.allCameras)
+            {
+                Logger.LogInfo("CAM name=" + c.name + " enabled=" + c.enabled + " depth=" + c.depth + " rect=" + c.rect);
+            }
+            List<Canvas> hiddenCanvases = new List<Canvas>();
+            try
+            {
+                UnityEngine.Object[] found = UnityEngine.Object.FindObjectsOfType(typeof(Canvas));
+                foreach (UnityEngine.Object o in found)
+                {
+                    Canvas cv = o as Canvas;
+                    if (cv != null && cv.enabled && cv.gameObject.activeInHierarchy)
+                    {
+                        cv.enabled = false;
+                        hiddenCanvases.Add(cv);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.LogError("Canvas hide failed: " + e.Message);
+            }
             try
             {
                 cam.targetTexture = rt;
@@ -73,6 +97,11 @@ namespace KK_KritaBridge
             {
                 cam.targetTexture = prevTarget;
                 RenderTexture.active = prevActive;
+                foreach (Canvas cv in hiddenCanvases)
+                {
+                    try { if (cv != null) cv.enabled = true; }
+                    catch (Exception) { }
+                }
                 UnityEngine.Object.Destroy(rt);
             }
         }
