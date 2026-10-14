@@ -34,6 +34,49 @@ namespace KK_KritaBridge
             CapturarYEnviar();
         }
 
+        bool CaptureCameraPng(string file)
+        {
+            Camera cam = Camera.main;
+            if (cam == null)
+            {
+                return false;
+            }
+            int w = Screen.width;
+            int h = Screen.height;
+            RenderTexture rt = new RenderTexture(w, h, 24);
+            RenderTexture prevTarget = cam.targetTexture;
+            RenderTexture prevActive = RenderTexture.active;
+            try
+            {
+                cam.targetTexture = rt;
+                cam.Render();
+                RenderTexture.active = rt;
+                Texture2D tex = new Texture2D(w, h, TextureFormat.RGB24, false);
+                try
+                {
+                    tex.ReadPixels(new Rect(0, 0, w, h), 0, 0);
+                    tex.Apply();
+                    File.WriteAllBytes(file, tex.EncodeToPNG());
+                }
+                finally
+                {
+                    UnityEngine.Object.Destroy(tex);
+                }
+                return true;
+            }
+            catch (Exception e)
+            {
+                Logger.LogError("Camera capture failed: " + e.Message);
+                return false;
+            }
+            finally
+            {
+                cam.targetTexture = prevTarget;
+                RenderTexture.active = prevActive;
+                UnityEngine.Object.Destroy(rt);
+            }
+        }
+
         void CapturarYEnviar()
         {
             string baseDir = Path.Combine(Application.dataPath, "..");
@@ -45,7 +88,10 @@ namespace KK_KritaBridge
 
             try
             {
-                Application.CaptureScreenshot(file);
+                if (!CaptureCameraPng(file))
+                {
+                    Application.CaptureScreenshot(file);
+                }
                 long epoch = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
                 File.WriteAllText(stat,
                     "{\"ready\":true,\"file\":\"" + latest + "\",\"ts\":" + epoch.ToString() + "}");
