@@ -3,17 +3,23 @@ import socket
 import threading
 import time
 
-# Krita 5 usa PyQt5, Krita 6 usa PySide6
+# Krita 5 usa PyQt5, Krita 6.0 trae PyQt6 (otros builds: PySide6)
 try:
-    from PySide6 import QtCore
-    from PySide6.QtWidgets import QMessageBox
-    _Signal = QtCore.Signal
-    _Slot = QtCore.Slot
-except ImportError:
-    from PyQt5 import QtCore
-    from PyQt5.QtWidgets import QMessageBox
+    from PyQt6 import QtCore
+    from PyQt6.QtWidgets import QMessageBox
     _Signal = QtCore.pyqtSignal
     _Slot = QtCore.pyqtSlot
+except ImportError:
+    try:
+        from PySide6 import QtCore
+        from PySide6.QtWidgets import QMessageBox
+        _Signal = QtCore.Signal
+        _Slot = QtCore.Slot
+    except ImportError:
+        from PyQt5 import QtCore
+        from PyQt5.QtWidgets import QMessageBox
+        _Signal = QtCore.pyqtSignal
+        _Slot = QtCore.pyqtSlot
 
 from krita import Krita, Extension
 

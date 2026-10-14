@@ -1,5 +1,9 @@
 # ChangeLog
 
+## v1.1.3 (PyQt6)
+- Krita 6.0.4 trae PyQt6 6.8.1 (ni PyQt5 ni PySide6). Cadena: PyQt6 -> PySide6 -> PyQt5.
+- Verificado contra ai_diffusion, que usa from PyQt6... pyqtSignal en el mismo Krita.
+
 ## v1.1.2 (Krita 6)
 - Krita real es 6.0.4/Qt6: usa PySide6, no PyQt5. Import dual con fallback.
 - Causa del "connection refused": el plugin nunca arranco por el import.
