@@ -1,5 +1,11 @@
 # ChangeLog
 
+## v1.1.5 (Krita 6 ABC completo)
+- Autorregistro con Krita.instance().addExtension (Krita 6 no llama a createExtension).
+- Overrides setup() y createActions() exigidos por la clase base abstracta.
+- Marcador import-top y guardias para fallos silenciosos.
+- Quitado X-Krita-AutoStart del .desktop (igual que plugins que funcionan).
+
 ## v1.1.3 (PyQt6)
 - Krita 6.0.4 trae PyQt6 6.8.1 (ni PyQt5 ni PySide6). Cadena: PyQt6 -> PySide6 -> PyQt5.
 - Verificado contra ai_diffusion, que usa from PyQt6... pyqtSignal en el mismo Krita.
