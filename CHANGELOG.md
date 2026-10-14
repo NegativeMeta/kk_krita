@@ -1,5 +1,9 @@
 # ChangeLog
 
+## v1.1.2 (Krita 6)
+- Krita real es 6.0.4/Qt6: usa PySide6, no PyQt5. Import dual con fallback.
+- Causa del "connection refused": el plugin nunca arranco por el import.
+
 ## v1.1.1 (connection diagnostics)
 - C#: 3 intentos de TCP con pausa de 500ms; mensaje claro si Krita no escucha.
 - Krita: log en UserData/krita_bridge/kk_bridge.log (carga, escucha, recepciones, imports).

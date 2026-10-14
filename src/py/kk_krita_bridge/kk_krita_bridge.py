@@ -3,8 +3,17 @@ import socket
 import threading
 import time
 
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import QMessageBox
+# Krita 5 usa PyQt5, Krita 6 usa PySide6
+try:
+    from PySide6 import QtCore
+    from PySide6.QtWidgets import QMessageBox
+    _Signal = QtCore.Signal
+    _Slot = QtCore.Slot
+except ImportError:
+    from PyQt5 import QtCore
+    from PyQt5.QtWidgets import QMessageBox
+    _Signal = QtCore.pyqtSignal
+    _Slot = QtCore.pyqtSlot
 
 from krita import Krita, Extension
 
@@ -23,7 +32,7 @@ def _log(msg):
 
 
 class _Receiver(QtCore.QObject):
-    dataReady = QtCore.pyqtSignal(str)
+    dataReady = _Signal(str)
 
     def __init__(self, parent=None):
         super(_Receiver, self).__init__(parent)
@@ -79,7 +88,7 @@ class KoikatsuBridgeExtension(Extension):
             _log("receiver fallo: %s" % ex)
             self._receiver = None
 
-    @QtCore.pyqtSlot(str)
+    @_Slot(str)
     def importCapture(self, payload):
         if not payload.startswith("IMPORT "):
             return
