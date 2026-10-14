@@ -149,8 +149,8 @@ try:
             _log("import ok: %s" % path)
             QMessageBox.information(None, "KK Bridge", "Frame importado como capa nueva.")
 
-    def createExtension(application):
-        return KoikatsuBridgeExtension(application)
+    _log("registrando extension")
+    Krita.instance().addExtension(KoikatsuBridgeExtension(Krita.instance()))
 
 except Exception:
     try:
