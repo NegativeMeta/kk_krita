@@ -32,17 +32,23 @@ try:
     # Krita 5 usa PyQt5, Krita 6.0 trae PyQt6 (otros builds: PySide6)
     try:
         from PyQt6 import QtCore
+        from PyQt6.QtGui import QImage
+        from PyQt6.QtCore import QByteArray
         from PyQt6.QtWidgets import QMessageBox
         _Signal = QtCore.pyqtSignal
         _Slot = QtCore.pyqtSlot
     except ImportError:
         try:
             from PySide6 import QtCore
+            from PySide6.QtGui import QImage
+            from PySide6.QtCore import QByteArray
             from PySide6.QtWidgets import QMessageBox
             _Signal = QtCore.Signal
             _Slot = QtCore.Slot
         except ImportError:
             from PyQt5 import QtCore
+            from PyQt5.QtGui import QImage
+            from PyQt5.QtCore import QByteArray
             from PyQt5.QtWidgets import QMessageBox
             _Signal = QtCore.pyqtSignal
             _Slot = QtCore.pyqtSlot
@@ -137,9 +143,20 @@ try:
                 return
             try:
                 active = doc.activeNode()
+                qimg = QImage()
+                if not qimg.load(path):
+                    raise RuntimeError("QImage no pudo leer el archivo")
+                if qimg.format() != QImage.Format.Format_ARGB32:
+                    qimg = qimg.convertToFormat(QImage.Format.Format_ARGB32)
+                w, h = qimg.width(), qimg.height()
+                ptr = qimg.constBits()
+                if ptr is None:
+                    raise RuntimeError("QImage sin datos")
+                data = QByteArray(ptr.asstring(qimg.sizeInBytes()))
                 layer = doc.createNode("KK capture", "paintlayer")
-                if layer is None or not layer.loadNodeId(path):
-                    raise RuntimeError("loadNodeId fallo")
+                if layer is None:
+                    raise RuntimeError("createNode fallo")
+                layer.setPixelData(data, 0, 0, w, h)
                 if active is not None and active.parentNode() is not None:
                     active.parentNode().addChildNode(layer, active)
                 else:
