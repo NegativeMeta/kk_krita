@@ -100,6 +100,10 @@ try:
                 _log("super-init fallo: %s" % ex)
                 raise
             _log("plugin cargado")
+            self._receiver = None
+
+        def setup(self):
+            _log("setup")
             try:
                 receiver = _Receiver()
                 receiver.dataReady.connect(self.importCapture)
