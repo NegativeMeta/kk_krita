@@ -10,22 +10,31 @@ except Exception:
     pass
 import os
 import socket
+import tempfile
 import threading
 import time
 import traceback
 
 BRIDGE_HOST = "127.0.0.1"
 BRIDGE_PORT = 9184
-BRIDGE_DIR = "E:/Users/johin/Code_Library_Old/Koikatsu BetterRepack RX22/UserData/krita_bridge"
-LOG_PATH = BRIDGE_DIR + "/kk_bridge.log"
+_bridge_dir = None
+
+
+def _bridge_log_path():
+    if _bridge_dir:
+        return os.path.join(_bridge_dir, "kk_bridge.log")
+    return os.path.join(tempfile.gettempdir(), "kk_bridge.log")
 
 
 def _log(msg):
-    try:
-        with open(LOG_PATH, "a", encoding="utf-8") as f:
-            f.write(msg + "\n")
-    except Exception:
-        pass
+    paths = [_bridge_log_path(), os.path.join(tempfile.gettempdir(), "kk_bridge.log")]
+    for p in paths:
+        try:
+            with open(p, "a", encoding="utf-8") as f:
+                f.write(msg + "\n")
+            return
+        except Exception:
+            continue
 
 
 try:
@@ -127,6 +136,13 @@ try:
         @_Slot(str)
         def importCapture(self, payload):
             payload = payload.lstrip("﻿ \t\r\n")
+            global _bridge_dir
+            for _prefix in ("LIVE ", "IMPORT "):
+                if payload.startswith(_prefix):
+                    _dir = os.path.dirname(payload[len(_prefix):].strip())
+                    if _dir:
+                        _bridge_dir = _dir
+                    break
             if payload.startswith("LIVE "):
                 importLive(self, payload[5:].strip())
                 return
