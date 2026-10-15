@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 namespace KK_KritaBridge
 {
-    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.7")]
+    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.8")]
     public class KKOneClick : BaseUnityPlugin
     {
         ConfigEntry<KeyCode> CaptureKey;
@@ -39,8 +39,8 @@ namespace KK_KritaBridge
         Color[] miniPrev;
         List<Canvas> cachedCanvases;
         float cachedAt;
-        GameObject nativeButtonGo;
-        GameObject liveToggleGo;
+        object nativeEntry;
+        object liveEntry;
         string lastPairKey = "";
         const int windowId = 987121;
         Texture2D kritaIcon;
@@ -335,13 +335,14 @@ namespace KK_KritaBridge
         {
             try
             {
-                GameObject myGo = ExtractGameObject(toolbarButton);
+                GameObject myGo = ControlObjectOf(toolbarButton);
+                if (myGo == null) myGo = ExtractGameObject(toolbarButton);
                 if (myGo == null)
                 {
                     Logger.LogError("KKBridge: no se pudo obtener GameObject del boton");
                     return;
                 }
-                nativeButtonGo = myGo;
+                nativeEntry = toolbarButton;
                 PairLiveToggle();
                 Transform parent = myGo.transform.parent;
                 if (parent == null) return;
@@ -362,6 +363,21 @@ namespace KK_KritaBridge
             catch (Exception e)
             {
                 Logger.LogError("Toolbar order failed: " + e.Message);
+            }
+        }
+
+        GameObject ControlObjectOf(object entry)
+        {
+            try
+            {
+                if (entry == null) return null;
+                PropertyInfo p = entry.GetType().GetProperty("ControlObject", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (p == null) return null;
+                return p.GetValue(entry, null) as GameObject;
+            }
+            catch (Exception)
+            {
+                return null;
             }
         }
 
@@ -628,23 +644,29 @@ namespace KK_KritaBridge
         {
             try
             {
-                if (nativeButtonGo == null || liveToggleGo == null) return;
-                Transform parent = nativeButtonGo.transform.parent;
-                if (parent == null || parent != liveToggleGo.transform.parent)
+                GameObject nb = ControlObjectOf(nativeEntry);
+                GameObject lt = ControlObjectOf(liveEntry);
+                if (nb == null || lt == null)
+                {
+                    LogPairKey("nocontrol nb=" + (nb != null) + " lt=" + (lt != null));
+                    return;
+                }
+                Transform parent = nb.transform.parent;
+                if (parent == null || parent != lt.transform.parent)
                 {
                     LogPairKey("noparent");
                     return;
                 }
                 int n = parent.childCount;
                 if (n < 2) return;
-                int snapIdx = nativeButtonGo.transform.GetSiblingIndex();
-                int liveIdx = liveToggleGo.transform.GetSiblingIndex();
+                int snapIdx = nb.transform.GetSiblingIndex();
+                int liveIdx = lt.transform.GetSiblingIndex();
                 int target = snapIdx + 1;
                 if (target >= n) target = n - 1;
                 LogPairKey("n=" + n + " snap=" + snapIdx + " live=" + liveIdx + " tgt=" + target);
                 if (liveIdx != target)
                 {
-                    liveToggleGo.transform.SetSiblingIndex(target);
+                    lt.transform.SetSiblingIndex(target);
                 }
             }
             catch (Exception e)
@@ -690,7 +712,7 @@ namespace KK_KritaBridge
                 Delegate cb = Delegate.CreateDelegate(cbType, this, "OnLiveToggle");
                 object result = m.Invoke(null, new object[] { icon32, false, cb });
                 if (result == null) return false;
-                liveToggleGo = ExtractGameObject(result);
+                liveEntry = result;
                 PairLiveToggle();
                 Logger.LogInfo("KKBridge: toggle live registrado en toolbar");
                 return true;

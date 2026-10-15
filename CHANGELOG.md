@@ -1,5 +1,9 @@
 # ChangeLog
 
+## v1.7.8 (ControlObject pairing)
+- Uses KKAPI's documented ControlObject handle (re-resolved every check, immune
+  to toolbar rebuilds) to glue live right below the snapshot button.
+
 ## v1.7.7 (pairing actually works)
 - Fixed GameObject extraction (direct result + private base-class fields), so the
   live toggle is really found and glued right below the snapshot button.
