@@ -10,7 +10,7 @@ using UnityEngine.UI;
 
 namespace KK_KritaBridge
 {
-    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.3.0")]
+    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.4.0")]
     public class KKOneClick : BaseUnityPlugin
     {
         ConfigEntry<KeyCode> CaptureKey;
@@ -18,8 +18,13 @@ namespace KK_KritaBridge
         ConfigEntry<string> TargetHost;
         ConfigEntry<int> TargetPort;
         ConfigEntry<bool> ShowButton;
+        ConfigEntry<int> BtnX;
+        ConfigEntry<int> BtnY;
         bool hideOwnUI;
         const int windowId = 987121;
+        Texture2D kritaIcon;
+        Rect windowRect;
+        GUIStyle emptyWinStyle;
 
         const string latest = "latest.png";
         const string status = "capture.status";
@@ -28,6 +33,10 @@ namespace KK_KritaBridge
         {
             CaptureKey  = Config.Bind("Hotkey", "CaptureKey", KeyCode.F12);
             ShowButton  = Config.Bind("UI", "ShowButton", true, "Muestra el boton flotante para enviar a Krita");
+            BtnX  = Config.Bind("UI", "ButtonX", 8, "Posicion X del boton");
+            BtnY  = Config.Bind("UI", "ButtonY", 320, "Posicion Y del boton");
+            windowRect = new Rect(BtnX.Value, BtnY.Value, 52, 52);
+            LoadIcon();
             BridgeDir   = Config.Bind("Bridge", "BridgeDir", "UserData/krita_bridge");
             TargetHost  = Config.Bind("Bridge", "Host", "127.0.0.1");
             TargetPort  = Config.Bind("Bridge", "Port", 9184);
@@ -43,16 +52,39 @@ namespace KK_KritaBridge
         void OnGUI()
         {
             if (!ShowButton.Value || hideOwnUI) return;
-            GUI.Window(windowId, new Rect(10, Screen.height - 120, 130, 60), CaptureWindow, "KK Krita");
+            if (emptyWinStyle == null) emptyWinStyle = new GUIStyle();
+            windowRect = GUI.Window(windowId, windowRect, IconWindow, GUIContent.none, emptyWinStyle);
         }
 
-        void CaptureWindow(int id)
+        void IconWindow(int id)
         {
-            if (GUI.Button(new Rect(15, 24, 100, 26), "A Krita"))
+            if (kritaIcon != null)
+            {
+                if (GUI.Button(new Rect(2, 2, 48, 48), kritaIcon)) CapturarYEnviar();
+            }
+            else if (GUI.Button(new Rect(2, 2, 48, 48), "K"))
             {
                 CapturarYEnviar();
             }
             GUI.DragWindow();
+        }
+
+        void LoadIcon()
+        {
+            try
+            {
+                string dir = Path.GetDirectoryName(typeof(KKOneClick).Assembly.Location);
+                string iconPath = Path.Combine(dir, "krita_icon.png");
+                if (File.Exists(iconPath))
+                {
+                    kritaIcon = new Texture2D(2, 2);
+                    kritaIcon.LoadImage(File.ReadAllBytes(iconPath));
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.LogError("Icon load failed: " + e.Message);
+            }
         }
 
         bool CaptureCameraPng(string file)
@@ -129,6 +161,9 @@ namespace KK_KritaBridge
 
         void CapturarYEnviar()
         {
+            BtnX.Value = (int)windowRect.x;
+            BtnY.Value = (int)windowRect.y;
+            try { Config.Save(); } catch (Exception) { }
             string baseDir = Path.Combine(Application.dataPath, "..");
             string bridge   = Path.Combine(baseDir, BridgeDir.Value);
             Directory.CreateDirectory(bridge);

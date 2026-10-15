@@ -1,5 +1,10 @@
 # ChangeLog
 
+## v1.4.0 (boton icono Krita)
+- Boton cuadrado 48px arrastrable con el icono oficial de Krita (krita_icon.png junto al DLL).
+- Posicion persistente en settings (UI > ButtonX/ButtonY, se guarda al capturar).
+- Fallback a boton "K" si falta el icono.
+
 ## v1.3.0 (boton flotante)
 - Ventana IMGUI arrastrable "KK Krita" con boton "A Krita" (no sale en la captura).
 - Toggle en settings: UI > ShowButton (ConfigurationManager lo muestra solo).
