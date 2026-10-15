@@ -1,5 +1,10 @@
 # ChangeLog
 
+## v1.6.0 (boton nativo toolbar)
+- Registro en la toolbar del Studio via KKAPI CustomToolbarButtons por reflexion (como KKPE/Timeline).
+- Icono 32x32 + reintento cada 2s hasta registrar; flotante queda de respaldo.
+- Boton oscuro plano para igualar la grilla.
+
 ## v1.5.2 (junto a Find)
 - Defaults medidos de tu captura 1920x1080: boton 42px a la derecha de Find (108, 593).
 - cfg vivo actualizado con esos valores; DockFind off.

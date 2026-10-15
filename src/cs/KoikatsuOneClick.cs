@@ -3,6 +3,7 @@ using System.IO;
 using System.Net.Sockets;
 using System.Text;
 using System.Collections.Generic;
+using System.Reflection;
 using BepInEx;
 using BepInEx.Configuration;
 using UnityEngine;
@@ -10,7 +11,7 @@ using UnityEngine.UI;
 
 namespace KK_KritaBridge
 {
-    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.5.1")]
+    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.6.0")]
     public class KKOneClick : BaseUnityPlugin
     {
         ConfigEntry<KeyCode> CaptureKey;
@@ -25,10 +26,13 @@ namespace KK_KritaBridge
         RectTransform findRect;
         int scanCooldown;
         bool hideOwnUI;
+        bool nativeOk;
+        int frame;
         const int windowId = 987121;
         Texture2D kritaIcon;
         Rect windowRect;
         GUIStyle emptyWinStyle;
+        GUIStyle iconBtnStyle;
 
         const string latest = "latest.png";
         const string status = "capture.status";
@@ -51,13 +55,13 @@ namespace KK_KritaBridge
 
         void Update()
         {
-            if (!Input.GetKeyDown(CaptureKey.Value)) return;
-            CapturarYEnviar();
+            if (Input.GetKeyDown(CaptureKey.Value)) CapturarYEnviar();
+            if (!nativeOk && ((frame++ % 120) == 0)) nativeOk = TryRegisterNativeButton();
         }
 
         void OnGUI()
         {
-            if (!ShowButton.Value || hideOwnUI) return;
+            if (!ShowButton.Value || hideOwnUI || nativeOk) return;
             if (emptyWinStyle == null) emptyWinStyle = new GUIStyle();
             if (DockFind.Value) DockToFind();
             windowRect = GUI.Window(windowId, windowRect, IconWindow, GUIContent.none, emptyWinStyle);
@@ -65,18 +69,34 @@ namespace KK_KritaBridge
 
         void IconWindow(int id)
         {
-            float s = Mathf.Min(windowRect.width, windowRect.height) - 4f;
-            if (s < 16f) s = 16f;
-            Rect r = new Rect((windowRect.width - s) / 2f, (windowRect.height - s) / 2f, s, s);
+            if (iconBtnStyle == null)
+            {
+                iconBtnStyle = new GUIStyle();
+                iconBtnStyle.normal.background = MakeTex(64, 64, 64);
+                iconBtnStyle.hover.background = MakeTex(82, 82, 82);
+                iconBtnStyle.active.background = MakeTex(48, 48, 48);
+                iconBtnStyle.focused.background = MakeTex(64, 64, 64);
+                iconBtnStyle.padding = new RectOffset(5, 5, 5, 5);
+            }
+            float s = Mathf.Min(windowRect.width, windowRect.height);
+            Rect r = new Rect(0, 0, s, s);
             if (kritaIcon != null)
             {
-                if (GUI.Button(r, kritaIcon)) CapturarYEnviar();
+                if (GUI.Button(r, kritaIcon, iconBtnStyle)) CapturarYEnviar();
             }
-            else if (GUI.Button(r, "K"))
+            else if (GUI.Button(r, "K", iconBtnStyle))
             {
                 CapturarYEnviar();
             }
             if (!DockFind.Value) GUI.DragWindow();
+        }
+
+        Texture2D MakeTex(byte r, byte g, byte b)
+        {
+            Texture2D t = new Texture2D(1, 1);
+            t.SetPixel(0, 0, new Color32(r, g, b, 255));
+            t.Apply();
+            return t;
         }
 
         void DockToFind()
@@ -142,6 +162,69 @@ namespace KK_KritaBridge
             catch (Exception e)
             {
                 Logger.LogError("Icon load failed: " + e.Message);
+            }
+        }
+
+        bool TryRegisterNativeButton()
+        {
+            try
+            {
+                Assembly kkapi = null;
+                foreach (Assembly a in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    if (a.GetName().Name == "KKAPI") { kkapi = a; break; }
+                }
+                if (kkapi == null) return false;
+                Type t = kkapi.GetType("KKAPI.Studio.UI.CustomToolbarButtons");
+                if (t == null) return false;
+                MethodInfo m = null;
+                MethodInfo[] methods = t.GetMethods();
+                foreach (MethodInfo cand in methods)
+                {
+                    if (cand.Name == "AddLeftToolbarButton" && cand.IsStatic && cand.IsPublic)
+                    {
+                        ParameterInfo[] ps = cand.GetParameters();
+                        if (ps.Length == 2 && ps[0].ParameterType == typeof(Texture2D)) { m = cand; break; }
+                    }
+                }
+                if (m == null) return false;
+                if (kritaIcon == null) return false;
+                Texture2D icon32 = ResizeIcon(kritaIcon, 32, 32);
+                if (icon32 == null) return false;
+                Type actionType = m.GetParameters()[1].ParameterType;
+                Delegate onClick = Delegate.CreateDelegate(actionType, this, "CapturarYEnviar");
+                object result = m.Invoke(null, new object[] { icon32, onClick });
+                if (result != null) Logger.LogInfo("KKBridge: boton nativo registrado en toolbar");
+                return result != null;
+            }
+            catch (Exception e)
+            {
+                Logger.LogError("Native button failed: " + e.Message);
+                return false;
+            }
+        }
+
+        Texture2D ResizeIcon(Texture2D src, int w, int h)
+        {
+            try
+            {
+                Texture2D dst = new Texture2D(w, h);
+                for (int y = 0; y < h; y++)
+                {
+                    for (int x = 0; x < w; x++)
+                    {
+                        float u = (float)x / (float)(w - 1);
+                        float v = (float)y / (float)(h - 1);
+                        dst.SetPixel(x, y, src.GetPixelBilinear(u, v));
+                    }
+                }
+                dst.Apply();
+                return dst;
+            }
+            catch (Exception e)
+            {
+                Logger.LogError("Resize failed: " + e.Message);
+                return null;
             }
         }
 
