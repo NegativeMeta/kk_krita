@@ -1,5 +1,9 @@
 # ChangeLog
 
+## v1.7.13 (leftmost match wins)
+- When several copies of a button exist (KKAPI logic objects vs visible clones),
+  pairing uses the leftmost active one — the one actually drawn in the strip.
+
 ## v1.7.12 (label census)
 - Pair log adds a global census of visible button labels, to find which UI
   framework the real strip uses (UGUI vs IMGUI vs TextMeshPro).

@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 namespace KK_KritaBridge
 {
-    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.12")]
+    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.13")]
     public class KKOneClick : BaseUnityPlugin
     {
         ConfigEntry<KeyCode> CaptureKey;
@@ -440,36 +440,63 @@ namespace KK_KritaBridge
             try
             {
                 if (icon == null) return null;
+                GameObject best = null;
+                float bestX = float.MaxValue;
                 UnityEngine.Object[] objs = UnityEngine.Object.FindObjectsOfType(typeof(Button));
                 foreach (UnityEngine.Object o in objs)
                 {
                     Button b = o as Button;
-                    if (b == null) continue;
+                    if (b == null || !b.gameObject.activeInHierarchy) continue;
                     Image[] imgs = b.GetComponentsInChildren<Image>(true);
                     foreach (Image im in imgs)
                     {
                         if (im != null && im.sprite != null && im.sprite.texture == icon)
-                            return b.gameObject;
+                        {
+                            float x = CenterX(b.gameObject);
+                            if (x < bestX) { bestX = x; best = b.gameObject; }
+                            break;
+                        }
                     }
                 }
                 UnityEngine.Object[] togs = UnityEngine.Object.FindObjectsOfType(typeof(Toggle));
                 foreach (UnityEngine.Object o in togs)
                 {
                     Toggle tg = o as Toggle;
-                    if (tg == null) continue;
+                    if (tg == null || !tg.gameObject.activeInHierarchy) continue;
                     Image[] imgs = tg.GetComponentsInChildren<Image>(true);
                     foreach (Image im in imgs)
                     {
                         if (im != null && im.sprite != null && im.sprite.texture == icon)
-                            return tg.gameObject;
+                        {
+                            float x = CenterX(tg.gameObject);
+                            if (x < bestX) { bestX = x; best = tg.gameObject; }
+                            break;
+                        }
                     }
                 }
+                return best;
             }
             catch (Exception e)
             {
                 Logger.LogError("FindIcon failed: " + e.Message);
             }
             return null;
+        }
+
+        float CenterX(GameObject go)
+        {
+            try
+            {
+                RectTransform rt = go.transform as RectTransform;
+                if (rt == null) return float.MaxValue;
+                Vector3[] c = new Vector3[4];
+                rt.GetWorldCorners(c);
+                return (c[0].x + c[2].x) * 0.5f;
+            }
+            catch (Exception)
+            {
+                return float.MaxValue;
+            }
         }
 
         GameObject ControlObjectOf(object entry)
