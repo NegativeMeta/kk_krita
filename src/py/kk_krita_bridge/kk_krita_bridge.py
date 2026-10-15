@@ -275,7 +275,8 @@ try:
 
 except Exception:
     try:
-        with open(LOG_PATH, "a", encoding="utf-8") as f:
+        import tempfile as _tf2
+        with open(_tf2.gettempdir() + "/kk_bridge.log", "a", encoding="utf-8") as f:
             f.write(traceback.format_exc() + "\n")
     except Exception:
         pass
