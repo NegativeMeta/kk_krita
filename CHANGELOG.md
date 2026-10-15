@@ -1,5 +1,9 @@
 # ChangeLog
 
+## v1.6.3 (gris auto)
+- Auto-muestrea el gris del boton Find real y lo aplica (override manual: UI > ButtonBg).
+- Default 60 + re-render en vivo al cambiar el valor.
+
 ## v1.6.1 (fondo + orden)
 - Icono 32x32 con fondo gris oscuro horneado y esquinas redondeadas.
 - Reordena el boton junto a Find via jerarquia (log KKB-TOOLBAR con los hijos).

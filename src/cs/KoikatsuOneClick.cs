@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 namespace KK_KritaBridge
 {
-    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.6.1")]
+    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.6.3")]
     public class KKOneClick : BaseUnityPlugin
     {
         ConfigEntry<KeyCode> CaptureKey;
@@ -33,6 +33,10 @@ namespace KK_KritaBridge
         Rect windowRect;
         GUIStyle emptyWinStyle;
         GUIStyle iconBtnStyle;
+        ConfigEntry<int> ButtonBg;
+        ConfigEntry<bool> AutoMatchBg;
+        int lastBg = -1;
+        Texture2D nativeIcon;
 
         const string latest = "latest.png";
         const string status = "capture.status";
@@ -45,6 +49,8 @@ namespace KK_KritaBridge
             BtnY  = Config.Bind("UI", "ButtonY", 593, "Posicion Y del boton");
             BtnSize  = Config.Bind("UI", "ButtonSize", 42, "Tamano del boton");
             DockFind  = Config.Bind("UI", "DockFind", false, "Pegar el boton al lado de Find");
+            ButtonBg  = Config.Bind("UI", "ButtonBg", 60, "Brillo del fondo del boton 0-255");
+            AutoMatchBg  = Config.Bind("UI", "AutoMatchBg", true, "Copiar el gris del boton Find automaticamente");
             windowRect = new Rect(BtnX.Value, BtnY.Value, BtnSize.Value, BtnSize.Value);
             LoadIcon();
             BridgeDir   = Config.Bind("Bridge", "BridgeDir", "UserData/krita_bridge");
@@ -57,6 +63,11 @@ namespace KK_KritaBridge
         {
             if (Input.GetKeyDown(CaptureKey.Value)) CapturarYEnviar();
             if (!nativeOk && ((frame++ % 120) == 0)) nativeOk = TryRegisterNativeButton();
+            if (nativeOk && nativeIcon != null && ButtonBg.Value != lastBg)
+            {
+                lastBg = ButtonBg.Value;
+                RenderIcon(nativeIcon, kritaIcon, (float)lastBg / 255f);
+            }
         }
 
         void OnGUI()
@@ -189,11 +200,12 @@ namespace KK_KritaBridge
                 }
                 if (m == null) return false;
                 if (kritaIcon == null) return false;
-                Texture2D icon32 = BakeToolbarIcon(kritaIcon);
-                if (icon32 == null) return false;
+                nativeIcon = BakeToolbarIcon(kritaIcon);
+                if (nativeIcon == null) return false;
+                lastBg = ButtonBg.Value;
                 Type actionType = m.GetParameters()[1].ParameterType;
                 Delegate onClick = Delegate.CreateDelegate(actionType, this, "CapturarYEnviar");
-                object result = m.Invoke(null, new object[] { icon32, onClick });
+                object result = m.Invoke(null, new object[] { nativeIcon, onClick });
                 if (result == null) return false;
                 Logger.LogInfo("KKBridge: boton nativo registrado en toolbar");
                 SetupToolbarPosition(result);
@@ -208,12 +220,22 @@ namespace KK_KritaBridge
 
         Texture2D BakeToolbarIcon(Texture2D src)
         {
+            Texture2D dst = new Texture2D(32, 32);
+            if (!RenderIcon(dst, src, (float)ButtonBg.Value / 255f))
+            {
+                UnityEngine.Object.Destroy(dst);
+                return null;
+            }
+            return dst;
+        }
+
+        bool RenderIcon(Texture2D dst, Texture2D src, float bgV)
+        {
             try
             {
                 int S = 32;
-                Color bg = new Color(0.2f, 0.2f, 0.2f, 1f);
+                Color bg = new Color(bgV, bgV, bgV, 1f);
                 float m0 = 0.06f, m1 = 0.94f;
-                Texture2D dst = new Texture2D(S, S);
                 for (int y = 0; y < S; y++)
                 {
                     for (int x = 0; x < S; x++)
@@ -227,12 +249,12 @@ namespace KK_KritaBridge
                     }
                 }
                 dst.Apply();
-                return dst;
+                return true;
             }
             catch (Exception e)
             {
-                Logger.LogError("Icon bake failed: " + e.Message);
-                return null;
+                Logger.LogError("Icon render failed: " + e.Message);
+                return false;
             }
         }
 
@@ -259,6 +281,7 @@ namespace KK_KritaBridge
                 {
                     myGo.transform.SetSiblingIndex(findIdx + 1);
                     Logger.LogInfo("KKBridge: boton movido junto a Find");
+                    if (AutoMatchBg.Value) TryMatchStockBg(parent.GetChild(findIdx).gameObject);
                 }
             }
             catch (Exception e)
@@ -308,6 +331,32 @@ namespace KK_KritaBridge
             Component c = v as Component;
             if (c != null) return c.gameObject;
             return null;
+        }
+
+        void TryMatchStockBg(GameObject findGo)
+        {
+            try
+            {
+                Image[] imgs = findGo.GetComponentsInChildren<Image>(true);
+                foreach (Image im in imgs)
+                {
+                    if (im == null || im.sprite == null) continue;
+                    Texture2D t = im.sprite.texture;
+                    if (t == null) continue;
+                    Rect r = im.sprite.rect;
+                    Color c = t.GetPixel((int)r.x + 2, (int)r.y + 2);
+                    int gray = (int)(c.grayscale * 255f);
+                    if (gray < 8 || gray > 247) continue;
+                    ButtonBg.Value = gray;
+                    Logger.LogInfo("KKBridge: fondo auto = " + gray);
+                    return;
+                }
+                Logger.LogInfo("KKBridge: no se pudo muestrear fondo (textura no legible?)");
+            }
+            catch (Exception e)
+            {
+                Logger.LogInfo("KKBridge: muestreo fondo: " + e.Message);
+            }
         }
 
         bool CaptureCameraPng(string file)
