@@ -1,5 +1,8 @@
 # ChangeLog
 
+## v1.7.4 (paired buttons)
+- Live toggle docks right after the snapshot button: both stay side by side.
+
 ## v1.7.3 (live REC icon)
 - Live toggle uses the Krita icon with a red recording dot (white ring) in the corner.
 - Sends without BOM at the source (Krita already tolerates both).

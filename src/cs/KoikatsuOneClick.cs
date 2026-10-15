@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 namespace KK_KritaBridge
 {
-    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.3")]
+    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.4")]
     public class KKOneClick : BaseUnityPlugin
     {
         ConfigEntry<KeyCode> CaptureKey;
@@ -39,6 +39,9 @@ namespace KK_KritaBridge
         Color[] miniPrev;
         List<Canvas> cachedCanvases;
         float cachedAt;
+        GameObject nativeButtonGo;
+        GameObject liveToggleGo;
+        bool livePaired;
         const int windowId = 987121;
         Texture2D kritaIcon;
         Rect windowRect;
@@ -337,6 +340,8 @@ namespace KK_KritaBridge
                     Logger.LogError("KKBridge: no se pudo obtener GameObject del boton");
                     return;
                 }
+                nativeButtonGo = myGo;
+                PairLiveToggle();
                 Transform parent = myGo.transform.parent;
                 if (parent == null) return;
                 int findIdx = -1;
@@ -605,6 +610,22 @@ namespace KK_KritaBridge
             else Logger.LogInfo("KKBridge: live detenido");
         }
 
+        void PairLiveToggle()
+        {
+            try
+            {
+                if (livePaired || nativeButtonGo == null || liveToggleGo == null) return;
+                if (nativeButtonGo.transform.parent != liveToggleGo.transform.parent) return;
+                liveToggleGo.transform.SetSiblingIndex(nativeButtonGo.transform.GetSiblingIndex() + 1);
+                livePaired = true;
+                Logger.LogInfo("KKBridge: botones lado a lado");
+            }
+            catch (Exception e)
+            {
+                Logger.LogError("Pair failed: " + e.Message);
+            }
+        }
+
         bool TryRegisterLiveToggle()
         {
             try
@@ -635,6 +656,8 @@ namespace KK_KritaBridge
                 Delegate cb = Delegate.CreateDelegate(cbType, this, "OnLiveToggle");
                 object result = m.Invoke(null, new object[] { icon32, false, cb });
                 if (result == null) return false;
+                liveToggleGo = ExtractGameObject(result);
+                PairLiveToggle();
                 Logger.LogInfo("KKBridge: toggle live registrado en toolbar");
                 return true;
             }
