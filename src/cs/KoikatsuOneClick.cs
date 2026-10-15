@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 namespace KK_KritaBridge
 {
-    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.8")]
+    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.9")]
     public class KKOneClick : BaseUnityPlugin
     {
         ConfigEntry<KeyCode> CaptureKey;
@@ -44,6 +44,7 @@ namespace KK_KritaBridge
         string lastPairKey = "";
         const int windowId = 987121;
         Texture2D kritaIcon;
+        Texture2D liveIcon32;
         Rect windowRect;
         GUIStyle emptyWinStyle;
         GUIStyle iconBtnStyle;
@@ -366,6 +367,43 @@ namespace KK_KritaBridge
             }
         }
 
+        GameObject FindButtonByIcon(Texture2D icon)
+        {
+            try
+            {
+                if (icon == null) return null;
+                UnityEngine.Object[] objs = UnityEngine.Object.FindObjectsOfType(typeof(Button));
+                foreach (UnityEngine.Object o in objs)
+                {
+                    Button b = o as Button;
+                    if (b == null) continue;
+                    Image[] imgs = b.GetComponentsInChildren<Image>(true);
+                    foreach (Image im in imgs)
+                    {
+                        if (im != null && im.sprite != null && im.sprite.texture == icon)
+                            return b.gameObject;
+                    }
+                }
+                UnityEngine.Object[] togs = UnityEngine.Object.FindObjectsOfType(typeof(Toggle));
+                foreach (UnityEngine.Object o in togs)
+                {
+                    Toggle tg = o as Toggle;
+                    if (tg == null) continue;
+                    Image[] imgs = tg.GetComponentsInChildren<Image>(true);
+                    foreach (Image im in imgs)
+                    {
+                        if (im != null && im.sprite != null && im.sprite.texture == icon)
+                            return tg.gameObject;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.LogError("FindIcon failed: " + e.Message);
+            }
+            return null;
+        }
+
         GameObject ControlObjectOf(object entry)
         {
             try
@@ -644,8 +682,10 @@ namespace KK_KritaBridge
         {
             try
             {
-                GameObject nb = ControlObjectOf(nativeEntry);
-                GameObject lt = ControlObjectOf(liveEntry);
+                GameObject nb = FindButtonByIcon(nativeIcon);
+                if (nb == null) nb = ControlObjectOf(nativeEntry);
+                GameObject lt = FindButtonByIcon(liveIcon32);
+                if (lt == null) lt = ControlObjectOf(liveEntry);
                 if (nb == null || lt == null)
                 {
                     LogPairKey("nocontrol nb=" + (nb != null) + " lt=" + (lt != null));
@@ -706,11 +746,11 @@ namespace KK_KritaBridge
                 }
                 if (m == null) return false;
                 if (kritaIcon == null) return false;
-                Texture2D icon32 = BakeLiveIcon(kritaIcon);
-                if (icon32 == null) return false;
+                liveIcon32 = BakeLiveIcon(kritaIcon);
+                if (liveIcon32 == null) return false;
                 Type cbType = m.GetParameters()[2].ParameterType;
                 Delegate cb = Delegate.CreateDelegate(cbType, this, "OnLiveToggle");
-                object result = m.Invoke(null, new object[] { icon32, false, cb });
+                object result = m.Invoke(null, new object[] { liveIcon32, false, cb });
                 if (result == null) return false;
                 liveEntry = result;
                 PairLiveToggle();
