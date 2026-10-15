@@ -1,5 +1,9 @@
 # ChangeLog
 
+## v1.7.1 (live sin trabas)
+- Krita: anti-acumulacion (solo procesa el ultimo frame pendiente).
+- Juego: cache de Canvas 5s + intervalo 1000ms por defecto.
+
 ## v1.7.0 (modo live)
 - Toggle nativo en toolbar: captura cada IntervalMs (500) solo si cambia la escena.
 - Deteccion por mini-render 160x90 + diff (ThresholdPct 2); primer frame siempre se envia.

@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 namespace KK_KritaBridge
 {
-    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.0")]
+    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.1")]
     public class KKOneClick : BaseUnityPlugin
     {
         ConfigEntry<KeyCode> CaptureKey;
@@ -37,6 +37,8 @@ namespace KK_KritaBridge
         RenderTexture miniRT;
         Texture2D miniTex;
         Color[] miniPrev;
+        List<Canvas> cachedCanvases;
+        float cachedAt;
         const int windowId = 987121;
         Texture2D kritaIcon;
         Rect windowRect;
@@ -71,7 +73,7 @@ namespace KK_KritaBridge
             BridgeDir   = Config.Bind("Bridge", "BridgeDir", "UserData/krita_bridge");
             TargetHost  = Config.Bind("Bridge", "Host", "127.0.0.1");
             TargetPort  = Config.Bind("Bridge", "Port", 9184);
-            LiveIntervalMs  = Config.Bind("Live", "IntervalMs", 500, "Intervalo del modo live en ms");
+            LiveIntervalMs  = Config.Bind("Live", "IntervalMs", 1000, "Intervalo del modo live en ms");
             LiveThreshold  = Config.Bind("Live", "ThresholdPct", 2, "% de pixeles que dispara envio");
             Logger.LogInfo("KK Krita One Click ready");
         }
@@ -423,23 +425,39 @@ namespace KK_KritaBridge
 
         List<Canvas> HideCanvases()
         {
-            List<Canvas> hiddenCanvases = new List<Canvas>();
-            try
+            if (cachedCanvases == null || Time.realtimeSinceStartup - cachedAt > 5f)
             {
-                UnityEngine.Object[] found = UnityEngine.Object.FindObjectsOfType(typeof(Canvas));
-                foreach (UnityEngine.Object o in found)
+                cachedCanvases = new List<Canvas>();
+                try
                 {
-                    Canvas cv = o as Canvas;
+                    UnityEngine.Object[] found = UnityEngine.Object.FindObjectsOfType(typeof(Canvas));
+                    foreach (UnityEngine.Object o in found)
+                    {
+                        Canvas cv = o as Canvas;
+                        if (cv != null && cv.gameObject.activeInHierarchy)
+                        {
+                            cachedCanvases.Add(cv);
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Logger.LogError("Canvas scan failed: " + e.Message);
+                }
+                cachedAt = Time.realtimeSinceStartup;
+            }
+            List<Canvas> hiddenCanvases = new List<Canvas>();
+            foreach (Canvas cv in cachedCanvases)
+            {
+                try
+                {
                     if (cv != null && cv.enabled && cv.gameObject.activeInHierarchy)
                     {
                         cv.enabled = false;
                         hiddenCanvases.Add(cv);
                     }
                 }
-            }
-            catch (Exception e)
-            {
-                Logger.LogError("Canvas hide failed: " + e.Message);
+                catch (Exception) { }
             }
             return hiddenCanvases;
         }

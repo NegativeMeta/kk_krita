@@ -106,6 +106,8 @@ try:
                 _log("super-init fallo: %s" % ex)
                 raise
             _log("plugin cargado")
+            self._pending_live = None
+            self._busy_live = False
             self._receiver = None
 
         def setup(self):
@@ -204,6 +206,19 @@ try:
         return None
 
     def importLive(self, path):
+        self._pending_live = path
+        if self._busy_live:
+            return
+        self._busy_live = True
+        try:
+            while self._pending_live is not None:
+                p = self._pending_live
+                self._pending_live = None
+                _do_live(self, p)
+        finally:
+            self._busy_live = False
+
+    def _do_live(self, path):
         for _ in range(12):
             if path and os.path.exists(path):
                 break
