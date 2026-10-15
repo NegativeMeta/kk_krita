@@ -1,5 +1,9 @@
 # ChangeLog
 
+## v1.2.1 (final)
+- Exito silencioso: sin popup al importar, solo avisos en caso de error.
+- Estado verificado funcionando: captura limpia sin UI + capa nueva en Krita.
+
 ## v1.2.0 (captura limpia)
 - Render solo de Camera.main a RenderTexture (la UI IMGUI no se dibuja ahi).
 - Canvas UGUI apagados durante el render y restaurados despues (estilo Screencap).
