@@ -1,5 +1,9 @@
 # ChangeLog
 
+## v1.7.3 (live REC icon)
+- Live toggle uses the Krita icon with a red recording dot (white ring) in the corner.
+- Sends without BOM at the source (Krita already tolerates both).
+
 ## v1.7.2 (verified live)
 - Fix LIVE path slice [5:] + BOM-tolerant protocol + zero hardcoded paths.
 - Final working state: live toggle updates the "KK live" layer.

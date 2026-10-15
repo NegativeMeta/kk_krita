@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 namespace KK_KritaBridge
 {
-    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.1")]
+    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.3")]
     public class KKOneClick : BaseUnityPlugin
     {
         ConfigEntry<KeyCode> CaptureKey;
@@ -255,6 +255,35 @@ namespace KK_KritaBridge
                 UnityEngine.Object.Destroy(dst);
                 return null;
             }
+            return dst;
+        }
+
+        Texture2D BakeLiveIcon(Texture2D src)
+        {
+            Texture2D dst = new Texture2D(32, 32);
+            if (!RenderIcon(dst, src, (float)ButtonBgTop.Value / 255f, (float)ButtonBgBottom.Value / 255f, (float)IconMargin.Value / 100f))
+            {
+                UnityEngine.Object.Destroy(dst);
+                return null;
+            }
+            float cx = 23.5f, cy = 7.5f;
+            for (int y = 0; y < 32; y++)
+            {
+                for (int x = 0; x < 32; x++)
+                {
+                    float dx = (float)x - cx, dy = (float)y - cy;
+                    float d = Mathf.Sqrt(dx * dx + dy * dy);
+                    if (d <= 6f && d > 4.5f)
+                    {
+                        dst.SetPixel(x, y, new Color(1f, 1f, 1f, 1f));
+                    }
+                    else if (d <= 4.5f)
+                    {
+                        dst.SetPixel(x, y, new Color(1f, 0.12f, 0.12f, 1f));
+                    }
+                }
+            }
+            dst.Apply();
             return dst;
         }
 
@@ -600,7 +629,7 @@ namespace KK_KritaBridge
                 }
                 if (m == null) return false;
                 if (kritaIcon == null) return false;
-                Texture2D icon32 = BakeToolbarIcon(kritaIcon);
+                Texture2D icon32 = BakeLiveIcon(kritaIcon);
                 if (icon32 == null) return false;
                 Type cbType = m.GetParameters()[2].ParameterType;
                 Delegate cb = Delegate.CreateDelegate(cbType, this, "OnLiveToggle");
