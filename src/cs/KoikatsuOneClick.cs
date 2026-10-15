@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 namespace KK_KritaBridge
 {
-    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.9")]
+    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.10")]
     public class KKOneClick : BaseUnityPlugin
     {
         ConfigEntry<KeyCode> CaptureKey;
@@ -688,13 +688,13 @@ namespace KK_KritaBridge
                 if (lt == null) lt = ControlObjectOf(liveEntry);
                 if (nb == null || lt == null)
                 {
-                    LogPairKey("nocontrol nb=" + (nb != null) + " lt=" + (lt != null));
+                    LogPairKey("nocontrol nb=" + (nb != null) + " lt=" + (lt != null), null);
                     return;
                 }
                 Transform parent = nb.transform.parent;
                 if (parent == null || parent != lt.transform.parent)
                 {
-                    LogPairKey("noparent");
+                    LogPairKey("noparent", null);
                     return;
                 }
                 int n = parent.childCount;
@@ -703,7 +703,7 @@ namespace KK_KritaBridge
                 int liveIdx = lt.transform.GetSiblingIndex();
                 int target = snapIdx + 1;
                 if (target >= n) target = n - 1;
-                LogPairKey("n=" + n + " snap=" + snapIdx + " live=" + liveIdx + " tgt=" + target);
+                LogPairKey("n=" + n + " snap=" + snapIdx + " live=" + liveIdx + " tgt=" + target, parent);
                 if (liveIdx != target)
                 {
                     lt.transform.SetSiblingIndex(target);
@@ -715,11 +715,30 @@ namespace KK_KritaBridge
             }
         }
 
-        void LogPairKey(string key)
+        void LogPairKey(string key, Transform parent)
         {
             if (key == lastPairKey) return;
             lastPairKey = key;
             Logger.LogInfo("KKBridge: pair " + key);
+            if (parent == null) return;
+            for (int i = 0; i < parent.childCount; i++)
+            {
+                try
+                {
+                    Transform c = parent.GetChild(i);
+                    if (c == null) continue;
+                    string tag = "";
+                    Image[] imgs = c.GetComponentsInChildren<Image>(true);
+                    foreach (Image im in imgs)
+                    {
+                        if (im == null || im.sprite == null || im.sprite.texture == null) continue;
+                        if (im.sprite.texture == nativeIcon) tag += "[SNAP]";
+                        if (im.sprite.texture == liveIcon32) tag += "[LIVE]";
+                    }
+                    Logger.LogInfo("KKB-TOOLBAR child " + i + ": " + c.name + " active=" + c.gameObject.activeInHierarchy + tag);
+                }
+                catch (Exception) { }
+            }
         }
 
         bool TryRegisterLiveToggle()

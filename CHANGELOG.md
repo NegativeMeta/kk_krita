@@ -1,5 +1,9 @@
 # ChangeLog
 
+## v1.7.10 (toolbar census)
+- Pair log now lists every toolbar child with active state and icon tags, so a
+  wrong match can be seen instead of guessed.
+
 ## v1.7.9 (find buttons by icon)
 - Locates both toolbar buttons by their baked icon texture (immune to KKAPI
   internals and toolbar rebuilds), then glues live right below snapshot.
