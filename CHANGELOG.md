@@ -1,5 +1,10 @@
 # ChangeLog
 
+## v1.7.19 (act on first plausible layout)
+- Drop the "two identical samples" gate that never passed (positions jitter), the
+  reason the fix silently did nothing; act as soon as the grid looks valid and
+  re-check every second until confirmed.
+
 ## v1.7.18 (reliable live lookup + visible gate)
 - Live button is looked up inside the snapshot's own container first (the method
   that already proved to work in the census), then globally, then via KKAPI handle.

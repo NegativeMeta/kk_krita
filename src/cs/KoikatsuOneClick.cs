@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 namespace KK_KritaBridge
 {
-    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.18")]
+    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.19")]
     public class KKOneClick : BaseUnityPlugin
     {
         ConfigEntry<KeyCode> CaptureKey;
@@ -44,8 +44,6 @@ namespace KK_KritaBridge
         string lastPairKey = "";
         bool pairDone;
         int pairAttempts;
-        int stableCount;
-        float stableRefX, stableRefY, stableRefLx, stableRefLy;
         const int windowId = 987121;
         Texture2D kritaIcon;
         Texture2D liveIcon32;
@@ -91,7 +89,7 @@ namespace KK_KritaBridge
             if (Input.GetKeyDown(CaptureKey.Value)) CapturarYEnviar();
             if (!nativeOk && ((frame++ % 120) == 0)) nativeOk = TryRegisterNativeButton();
             if (!liveToggleOk && ((frame++ % 240) == 0)) liveToggleOk = TryRegisterLiveToggle();
-            if ((frame % 120) == 0) PairLiveToggle();
+            if ((frame % 60) == 0) PairLiveToggle();
             if (liveOn && Time.realtimeSinceStartup >= nextLiveAt)
             {
                 nextLiveAt = Time.realtimeSinceStartup + (float)LiveIntervalMs.Value / 1000f;
@@ -857,25 +855,12 @@ namespace KK_KritaBridge
                 Vector2 want = new Vector2(S.x, S.y - step);
 
                 if (S.sqrMagnitude < 1f || L.sqrMagnitude < 1f) return;
-
-                if (Mathf.Abs(S.x - stableRefX) <= 2f && Mathf.Abs(S.y - stableRefY) <= 2f
-                    && Mathf.Abs(L.x - stableRefLx) <= 2f && Mathf.Abs(L.y - stableRefLy) <= 2f)
-                {
-                    stableCount++;
-                }
-                else
-                {
-                    stableCount = 0;
-                    stableRefX = S.x; stableRefY = S.y;
-                    stableRefLx = L.x; stableRefLy = L.y;
-                }
+                if (step < 10f) return;
 
                 LogPairKey("how=" + how + " n=" + nA + " cols=" + CountCols(act, colTol)
                     + " snap=(" + Mathf.Round(S.x) + "," + Mathf.Round(S.y)
                     + ") live=(" + Mathf.Round(L.x) + "," + Mathf.Round(L.y) + ") step=" + step
-                    + " want=(" + Mathf.Round(want.x) + "," + Mathf.Round(want.y) + ") stable=" + stableCount, parent);
-
-                if (stableCount < 2) return;
+                    + " want=(" + Mathf.Round(want.x) + "," + Mathf.Round(want.y) + ")", parent);
 
                 if (Mathf.Abs(L.x - want.x) <= 1f && Mathf.Abs(L.y - want.y) <= 2f)
                 {
@@ -893,7 +878,6 @@ namespace KK_KritaBridge
                 Vector3 lp = lt.transform.position;
                 lt.transform.position = new Vector3(want.x, want.y, lp.z);
                 pairAttempts++;
-                stableCount = 0;
                 Logger.LogInfo("KKBridge: pair applied attempt=" + pairAttempts
                     + " live " + Mathf.Round(L.x) + "," + Mathf.Round(L.y)
                     + " -> " + Mathf.Round(want.x) + "," + Mathf.Round(want.y) + " occ=" + occ
