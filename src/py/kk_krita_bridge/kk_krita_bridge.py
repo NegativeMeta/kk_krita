@@ -4,7 +4,8 @@ Todo el cuerpo va dentro de un try para volcar cualquier error de import
 al log (Krita no muestra tracebacks de plugins en ningun lado visible).
 """
 try:
-    with open("E:/Users/johin/Code_Library_Old/Koikatsu BetterRepack RX22/UserData/krita_bridge/kk_bridge.log", "a", encoding="utf-8") as _f:
+    import tempfile as _tf
+    with open(_tf.gettempdir() + "/kk_bridge.log", "a", encoding="utf-8") as _f:
         _f.write("import-top\n")
 except Exception:
     pass
