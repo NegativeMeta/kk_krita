@@ -125,7 +125,7 @@ try:
         @_Slot(str)
         def importCapture(self, payload):
             if payload.startswith("LIVE "):
-                self.importLive(payload[7:].strip())
+                importLive(self, payload[7:].strip())
                 return
             if not payload.startswith("IMPORT "):
                 return
@@ -175,7 +175,7 @@ try:
                 return
             _log("import ok: %s" % path)
 
-    def _load_pixels(self, path):
+    def _load_pixels(path):
         try:
             qimg = QImage()
             if not qimg.load(path):
@@ -191,19 +191,18 @@ try:
             _log("pixels fallo: %s" % ex)
             return None
 
-    def _find_layer(self, node, name):
+    def _find_layer(node, name):
         try:
             if node.name() == name:
                 return node
             for child in node.childNodes():
-                found = self._find_layer(child, name)
+                found = _find_layer(child, name)
                 if found is not None:
                     return found
         except Exception:
             pass
         return None
 
-    @_Slot(str)
     def importLive(self, path):
         for _ in range(12):
             if path and os.path.exists(path):
@@ -215,13 +214,13 @@ try:
         doc = Krita.instance().activeDocument()
         if doc is None:
             return
-        px = self._load_pixels(path)
+        px = _load_pixels(path)
         if px is None:
             _log("live: no se pudo leer")
             return
         data, w, h = px
         try:
-            layer = self._find_layer(doc.rootNode(), "KK live")
+            layer = _find_layer(doc.rootNode(), "KK live")
             if layer is None:
                 layer = doc.createNode("KK live", "paintlayer")
                 if layer is None:
