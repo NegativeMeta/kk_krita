@@ -1,5 +1,9 @@
 # ChangeLog
 
+## v1.7.20 (pivot-safe moves)
+- Moves use the delta between measured centres instead of writing absolute centre
+  coordinates, so buttons whose pivot is not centred land exactly on the grid cell.
+
 ## v1.7.19 (act on first plausible layout)
 - Drop the "two identical samples" gate that never passed (positions jitter), the
   reason the fix silently did nothing; act as soon as the grid looks valid and

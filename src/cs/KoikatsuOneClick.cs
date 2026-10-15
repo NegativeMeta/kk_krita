@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 namespace KK_KritaBridge
 {
-    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.19")]
+    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.20")]
     public class KKOneClick : BaseUnityPlugin
     {
         ConfigEntry<KeyCode> CaptureKey;
@@ -870,13 +870,15 @@ namespace KK_KritaBridge
                 }
 
                 int occ = NearestIndex(pos, want, colTol);
+                Vector2 curLive = WorldCenter(lt.transform);
+                Vector2 curOcc = (occ >= 0 && occ != li) ? WorldCenter(act[occ].transform) : Vector2.zero;
                 if (occ >= 0 && occ != li)
                 {
                     Vector3 op = act[occ].transform.position;
-                    act[occ].transform.position = new Vector3(L.x, L.y, op.z);
+                    act[occ].transform.position = new Vector3(op.x + (L.x - curOcc.x), op.y + (L.y - curOcc.y), op.z);
                 }
                 Vector3 lp = lt.transform.position;
-                lt.transform.position = new Vector3(want.x, want.y, lp.z);
+                lt.transform.position = new Vector3(lp.x + (want.x - curLive.x), lp.y + (want.y - curLive.y), lp.z);
                 pairAttempts++;
                 Logger.LogInfo("KKBridge: pair applied attempt=" + pairAttempts
                     + " live " + Mathf.Round(L.x) + "," + Mathf.Round(L.y)
