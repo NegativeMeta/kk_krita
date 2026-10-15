@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 namespace KK_KritaBridge
 {
-    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.6.5")]
+    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.6.6")]
     public class KKOneClick : BaseUnityPlugin
     {
         ConfigEntry<KeyCode> CaptureKey;
@@ -247,15 +247,24 @@ namespace KK_KritaBridge
                 float m0 = mrg, m1 = 1f - mrg;
                 for (int y = 0; y < S; y++)
                 {
-                    float t = (float)y / (float)(S - 1);
-                    float g = botV + (topV - botV) * t;
+                    float ny = (float)y / (float)(S - 1);
+                    float g = botV + (topV - botV) * ny;
                     Color bg = new Color(g, g, g, 1f);
                     for (int x = 0; x < S; x++)
                     {
-                        float u = m0 + ((float)x / (float)(S - 1)) * (m1 - m0);
-                        float v = m0 + ((float)y / (float)(S - 1)) * (m1 - m0);
-                        Color sc = src.GetPixelBilinear(u, v);
-                        Color outc = sc * sc.a + bg * (1f - sc.a);
+                        float nx = (float)x / (float)(S - 1);
+                        Color outc;
+                        if (nx >= m0 && nx <= m1 && ny >= m0 && ny <= m1)
+                        {
+                            float u = (nx - m0) / (m1 - m0);
+                            float v = (ny - m0) / (m1 - m0);
+                            Color sc = src.GetPixelBilinear(u, v);
+                            outc = sc * sc.a + bg * (1f - sc.a);
+                        }
+                        else
+                        {
+                            outc = bg;
+                        }
                         outc.a = 1f;
                         dst.SetPixel(x, y, outc);
                     }

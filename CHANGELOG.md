@@ -1,5 +1,8 @@
 # ChangeLog
 
+## v1.6.6 (margen correcto)
+- Fix: el margen ahora si achica el icono (antes hacia zoom invertido).
+
 ## v1.6.5 (margen icono)
 - IconMargin % configurable con vista en vivo (12 por defecto).
 
