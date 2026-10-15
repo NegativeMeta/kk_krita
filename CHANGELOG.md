@@ -1,5 +1,10 @@
 # ChangeLog
 
+## v1.3.0 (boton flotante)
+- Ventana IMGUI arrastrable "KK Krita" con boton "A Krita" (no sale en la captura).
+- Toggle en settings: UI > ShowButton (ConfigurationManager lo muestra solo).
+- El boton se oculta durante el render por seguridad.
+
 ## v1.2.1 (final)
 - Exito silencioso: sin popup al importar, solo avisos en caso de error.
 - Estado verificado funcionando: captura limpia sin UI + capa nueva en Krita.

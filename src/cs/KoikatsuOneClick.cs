@@ -10,13 +10,16 @@ using UnityEngine.UI;
 
 namespace KK_KritaBridge
 {
-    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.0.0")]
+    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.3.0")]
     public class KKOneClick : BaseUnityPlugin
     {
         ConfigEntry<KeyCode> CaptureKey;
         ConfigEntry<string> BridgeDir;
         ConfigEntry<string> TargetHost;
         ConfigEntry<int> TargetPort;
+        ConfigEntry<bool> ShowButton;
+        bool hideOwnUI;
+        const int windowId = 987121;
 
         const string latest = "latest.png";
         const string status = "capture.status";
@@ -24,6 +27,7 @@ namespace KK_KritaBridge
         void Awake()
         {
             CaptureKey  = Config.Bind("Hotkey", "CaptureKey", KeyCode.F12);
+            ShowButton  = Config.Bind("UI", "ShowButton", true, "Muestra el boton flotante para enviar a Krita");
             BridgeDir   = Config.Bind("Bridge", "BridgeDir", "UserData/krita_bridge");
             TargetHost  = Config.Bind("Bridge", "Host", "127.0.0.1");
             TargetPort  = Config.Bind("Bridge", "Port", 9184);
@@ -34,6 +38,21 @@ namespace KK_KritaBridge
         {
             if (!Input.GetKeyDown(CaptureKey.Value)) return;
             CapturarYEnviar();
+        }
+
+        void OnGUI()
+        {
+            if (!ShowButton.Value || hideOwnUI) return;
+            GUI.Window(windowId, new Rect(10, Screen.height - 120, 130, 60), CaptureWindow, "KK Krita");
+        }
+
+        void CaptureWindow(int id)
+        {
+            if (GUI.Button(new Rect(15, 24, 100, 26), "A Krita"))
+            {
+                CapturarYEnviar();
+            }
+            GUI.DragWindow();
         }
 
         bool CaptureCameraPng(string file)
@@ -72,6 +91,7 @@ namespace KK_KritaBridge
             }
             try
             {
+                hideOwnUI = true;
                 cam.targetTexture = rt;
                 cam.Render();
                 RenderTexture.active = rt;
@@ -95,6 +115,7 @@ namespace KK_KritaBridge
             }
             finally
             {
+                hideOwnUI = false;
                 cam.targetTexture = prevTarget;
                 RenderTexture.active = prevActive;
                 foreach (Canvas cv in hiddenCanvases)
