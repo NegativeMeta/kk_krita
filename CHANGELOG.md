@@ -1,5 +1,9 @@
 # ChangeLog
 
+## v1.6.1 (fondo + orden)
+- Icono 32x32 con fondo gris oscuro horneado y esquinas redondeadas.
+- Reordena el boton junto a Find via jerarquia (log KKB-TOOLBAR con los hijos).
+
 ## v1.6.0 (boton nativo toolbar)
 - Registro en la toolbar del Studio via KKAPI CustomToolbarButtons por reflexion (como KKPE/Timeline).
 - Icono 32x32 + reintento cada 2s hasta registrar; flotante queda de respaldo.

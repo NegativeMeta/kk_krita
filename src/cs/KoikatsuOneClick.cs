@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 namespace KK_KritaBridge
 {
-    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.6.0")]
+    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.6.1")]
     public class KKOneClick : BaseUnityPlugin
     {
         ConfigEntry<KeyCode> CaptureKey;
@@ -189,13 +189,15 @@ namespace KK_KritaBridge
                 }
                 if (m == null) return false;
                 if (kritaIcon == null) return false;
-                Texture2D icon32 = ResizeIcon(kritaIcon, 32, 32);
+                Texture2D icon32 = BakeToolbarIcon(kritaIcon);
                 if (icon32 == null) return false;
                 Type actionType = m.GetParameters()[1].ParameterType;
                 Delegate onClick = Delegate.CreateDelegate(actionType, this, "CapturarYEnviar");
                 object result = m.Invoke(null, new object[] { icon32, onClick });
-                if (result != null) Logger.LogInfo("KKBridge: boton nativo registrado en toolbar");
-                return result != null;
+                if (result == null) return false;
+                Logger.LogInfo("KKBridge: boton nativo registrado en toolbar");
+                SetupToolbarPosition(result);
+                return true;
             }
             catch (Exception e)
             {
@@ -204,18 +206,33 @@ namespace KK_KritaBridge
             }
         }
 
-        Texture2D ResizeIcon(Texture2D src, int w, int h)
+        Texture2D BakeToolbarIcon(Texture2D src)
         {
             try
             {
-                Texture2D dst = new Texture2D(w, h);
-                for (int y = 0; y < h; y++)
+                int S = 32;
+                float R = 6f;
+                Color bg = new Color(0.25f, 0.25f, 0.25f, 1f);
+                Texture2D dst = new Texture2D(S, S);
+                for (int y = 0; y < S; y++)
                 {
-                    for (int x = 0; x < w; x++)
+                    for (int x = 0; x < S; x++)
                     {
-                        float u = (float)x / (float)(w - 1);
-                        float v = (float)y / (float)(h - 1);
-                        dst.SetPixel(x, y, src.GetPixelBilinear(u, v));
+                        bool inside = true;
+                        float cx = Mathf.Min((float)x, (float)(S - 1 - x));
+                        float cy = Mathf.Min((float)y, (float)(S - 1 - y));
+                        if (cx < R && cy < R)
+                        {
+                            float dx = R - cx;
+                            float dy = R - cy;
+                            if (dx * dx + dy * dy > R * R) inside = false;
+                        }
+                        float u = (float)x / (float)(S - 1);
+                        float v = (float)y / (float)(S - 1);
+                        Color sc = src.GetPixelBilinear(u, v);
+                        Color outc = sc * sc.a + bg * (1f - sc.a);
+                        if (!inside) outc.a = 0f;
+                        dst.SetPixel(x, y, outc);
                     }
                 }
                 dst.Apply();
@@ -223,9 +240,83 @@ namespace KK_KritaBridge
             }
             catch (Exception e)
             {
-                Logger.LogError("Resize failed: " + e.Message);
+                Logger.LogError("Icon bake failed: " + e.Message);
                 return null;
             }
+        }
+
+        void SetupToolbarPosition(object toolbarButton)
+        {
+            try
+            {
+                GameObject myGo = ExtractGameObject(toolbarButton);
+                if (myGo == null)
+                {
+                    Logger.LogError("KKBridge: no se pudo obtener GameObject del boton");
+                    return;
+                }
+                Transform parent = myGo.transform.parent;
+                if (parent == null) return;
+                int findIdx = -1;
+                for (int i = 0; i < parent.childCount; i++)
+                {
+                    string n = parent.GetChild(i).name;
+                    Logger.LogInfo("KKB-TOOLBAR child " + i + ": " + n);
+                    if (findIdx < 0 && n.IndexOf("Find") >= 0) findIdx = i;
+                }
+                if (findIdx >= 0)
+                {
+                    myGo.transform.SetSiblingIndex(findIdx + 1);
+                    Logger.LogInfo("KKBridge: boton movido junto a Find");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.LogError("Toolbar order failed: " + e.Message);
+            }
+        }
+
+        GameObject ExtractGameObject(object toolbarButton)
+        {
+            try
+            {
+                Type bt = toolbarButton.GetType();
+                PropertyInfo[] props = bt.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                foreach (PropertyInfo p in props)
+                {
+                    try
+                    {
+                        if (p.GetIndexParameters().Length > 0) continue;
+                        GameObject go = GameObjectFrom(p.GetValue(toolbarButton, null));
+                        if (go != null) return go;
+                    }
+                    catch (Exception) { }
+                }
+                FieldInfo[] fields = bt.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                foreach (FieldInfo f in fields)
+                {
+                    try
+                    {
+                        GameObject go = GameObjectFrom(f.GetValue(toolbarButton));
+                        if (go != null) return go;
+                    }
+                    catch (Exception) { }
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.LogError("Extract GO failed: " + e.Message);
+            }
+            return null;
+        }
+
+        GameObject GameObjectFrom(object v)
+        {
+            if (v == null) return null;
+            if (v is GameObject) return (GameObject)v;
+            Component c = v as Component;
+            if (c != null) return c.gameObject;
+            return null;
         }
 
         bool CaptureCameraPng(string file)
