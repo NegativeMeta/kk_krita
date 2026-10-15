@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 namespace KK_KritaBridge
 {
-    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.14")]
+    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.15")]
     public class KKOneClick : BaseUnityPlugin
     {
         ConfigEntry<KeyCode> CaptureKey;
@@ -87,7 +87,7 @@ namespace KK_KritaBridge
             if (Input.GetKeyDown(CaptureKey.Value)) CapturarYEnviar();
             if (!nativeOk && ((frame++ % 120) == 0)) nativeOk = TryRegisterNativeButton();
             if (!liveToggleOk && ((frame++ % 240) == 0)) liveToggleOk = TryRegisterLiveToggle();
-            if ((frame % 300) == 0) PairLiveToggle();
+            if ((frame % 120) == 0) PairLiveToggle();
             if (liveOn && Time.realtimeSinceStartup >= nextLiveAt)
             {
                 nextLiveAt = Time.realtimeSinceStartup + (float)LiveIntervalMs.Value / 1000f;
@@ -800,55 +800,71 @@ namespace KK_KritaBridge
                 }
                 int nA = act.Count;
                 if (nA < 3) return;
+                List<Vector2> pos = new List<Vector2>();
+                foreach (Transform t in act) pos.Add(WorldCenter(t));
                 int si = act.IndexOf(nb.transform);
                 int li = act.IndexOf(lt.transform);
-                if (si < 0 || li < 0)
+                if (si < 0 || li < 0) return;
+
+                Vector2 S = pos[si];
+                Vector2 L = pos[li];
+                float colTol = Mathf.Max(1f, ColStep(act) * 0.5f);
+                float step = SameColStep(pos, si, colTol);
+                Vector2 want = new Vector2(S.x, S.y - step);
+                float gap = S.y - L.y;
+
+                LogPairKey("n=" + nA + " cols=" + CountCols(act, colTol) + " snap=(" + Mathf.Round(S.x) + "," + Mathf.Round(S.y)
+                    + ") live=(" + Mathf.Round(L.x) + "," + Mathf.Round(L.y) + ") step=" + step
+                    + " gapY=" + Mathf.Round(gap) + " want=(" + Mathf.Round(want.x) + "," + Mathf.Round(want.y) + ")", parent);
+
+                if (Mathf.Abs(L.x - want.x) <= 1f && Mathf.Abs(L.y - want.y) <= 2f)
                 {
-                    LogPairKey("notinlist n=" + nA + " si=" + si + " li=" + li, null);
                     return;
                 }
-                Vector2 sPos = WorldCenter(nb.transform);
-                float colTol = Mathf.Max(1f, ColStep(act) * 0.5f);
-
-                int targetA = -1;
-                float bestDy = float.MaxValue;
-                for (int k = 0; k < nA; k++)
+                int occ = NearestIndex(pos, want, colTol);
+                if (occ >= 0 && occ != li)
                 {
-                    if (k == si) continue;
-                    Vector2 p = WorldCenter(act[k]);
-                    if (Mathf.Abs(p.x - sPos.x) > colTol) continue;
-                    float dy = sPos.y - p.y;
-                    if (dy > 1f && dy < bestDy) { bestDy = dy; targetA = k; }
+                    Vector3 op = act[occ].transform.position;
+                    act[occ].transform.position = new Vector3(L.x, L.y, op.z);
                 }
-                if (targetA < 0)
-                {
-                    int cols = CountCols(act, colTol);
-                    targetA = si + cols;
-                    if (targetA >= nA) targetA = nA - 1;
-                    if (targetA <= si) targetA = Mathf.Min(si + 1, nA - 1);
-                }
-                int targetSib = act[targetA].GetSiblingIndex();
-                int liveSib = lt.transform.GetSiblingIndex();
-
-                LogPairKey("n=" + nA + " cols=" + CountCols(act, colTol) + " si=" + si + " li=" + li
-                    + " liveSib=" + liveSib + " tgtA=" + targetA + " tgtSib=" + targetSib, parent);
-
-                if (liveSib != targetSib)
-                {
-                    lt.transform.SetSiblingIndex(targetSib);
-                    Logger.LogInfo("KKBridge: pair applied liveSib " + liveSib + " -> " + lt.transform.GetSiblingIndex()
-                        + " want=" + targetSib + " adjacent=" + AdjacentBelow(parent, nb.transform, lt.transform, colTol));
-                }
-                else
-                {
-                    Logger.LogInfo("KKBridge: pair order ignored liveSib=" + liveSib + " li=" + li
-                        + " tgtA=" + targetA + " adjacent=" + AdjacentBelow(parent, nb.transform, lt.transform, colTol));
-                }
+                Vector3 lp = lt.transform.position;
+                lt.transform.position = new Vector3(want.x, want.y, lp.z);
+                Vector2 nowL = WorldCenter(lt.transform);
+                Logger.LogInfo("KKBridge: pair moved live (" + Mathf.Round(L.x) + "," + Mathf.Round(L.y) + ") -> ("
+                    + Mathf.Round(nowL.x) + "," + Mathf.Round(nowL.y) + ") want=(" + Mathf.Round(want.x) + "," + Mathf.Round(want.y)
+                    + ") occ=" + occ + " adjacent=" + AdjacentBelow(parent, nb.transform, lt.transform, colTol));
             }
             catch (Exception e)
             {
                 Logger.LogError("MaintainPair failed: " + e.Message);
             }
+        }
+
+        float SameColStep(List<Vector2> pos, int si, float tol)
+        {
+            float best = float.MaxValue;
+            Vector2 s = pos[si];
+            for (int i = 0; i < pos.Count; i++)
+            {
+                if (i == si) continue;
+                if (Mathf.Abs(pos[i].x - s.x) > tol) continue;
+                float d = Mathf.Abs(pos[i].y - s.y);
+                if (d > 1f && d < best) best = d;
+            }
+            if (best != float.MaxValue) return best;
+            return 50f;
+        }
+
+        int NearestIndex(List<Vector2> pos, Vector2 p, float tol)
+        {
+            int best = -1;
+            float bd = float.MaxValue;
+            for (int i = 0; i < pos.Count; i++)
+            {
+                float d = Vector2.Distance(pos[i], p);
+                if (d < bd && d <= tol) { bd = d; best = i; }
+            }
+            return best;
         }
 
         Vector2 WorldCenter(Transform t)

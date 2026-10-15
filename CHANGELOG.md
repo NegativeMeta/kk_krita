@@ -1,5 +1,11 @@
 # ChangeLog
 
+## v1.7.15 (direct position pairing)
+- The toolbar container has no LayoutGroup: positions are fixed by the game's own
+  arrangement, so SetSiblingIndex never moved anything (logged adjacent=False).
+- Now the live button is placed by position: exactly one row below the snapshot
+  button, swapping cells with whoever occupied that spot, re-checked periodically.
+
 ## v1.7.14 (geometry-driven pairing)
 - Pairing is computed from real button positions in the visible grid (finds the
   cell directly below the snapshot button) instead of "next sibling index".
