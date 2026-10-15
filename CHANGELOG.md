@@ -1,5 +1,9 @@
 # ChangeLog
 
+## v1.7.6 (stacked: capture on top)
+- Snapshot button on top, live toggle glued right below it (same column).
+- Pairing diagnostics in the game log (KKBridge: pair ...).
+
 ## v1.7.5 (same-row pairing)
 - Detects the toolbar fill direction from real button positions and keeps both
   buttons in the same row (works with vertical or horizontal grids, re-checked live).
