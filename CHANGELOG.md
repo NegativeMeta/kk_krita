@@ -1,5 +1,9 @@
 # ChangeLog
 
+## v1.7.12 (label census)
+- Pair log adds a global census of visible button labels, to find which UI
+  framework the real strip uses (UGUI vs IMGUI vs TextMeshPro).
+
 ## v1.7.11 (visual strip pairing)
 - Finds the real visual toolbar (the container holding Find) and pairs the
   buttons there; KKAPI's logic container is no longer mistaken for the grid.

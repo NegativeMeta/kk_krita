@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 namespace KK_KritaBridge
 {
-    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.11")]
+    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.12")]
     public class KKOneClick : BaseUnityPlugin
     {
         ConfigEntry<KeyCode> CaptureKey;
@@ -807,6 +807,55 @@ namespace KK_KritaBridge
                 }
                 catch (Exception) { }
             }
+            try
+            {
+                UnityEngine.Object[] allb = UnityEngine.Object.FindObjectsOfType(typeof(Button));
+                int shown = 0;
+                foreach (UnityEngine.Object o in allb)
+                {
+                    Button b = o as Button;
+                    if (b == null || !b.gameObject.activeInHierarchy) continue;
+                    string label = ButtonLabel(b);
+                    if (label == null) continue;
+                    if (shown++ > 25) break;
+                    Logger.LogInfo("KKB-LABEL: " + label + " root=" + b.transform.root.name);
+                }
+            }
+            catch (Exception) { }
+        }
+
+        string ButtonLabel(Button b)
+        {
+            try
+            {
+                Component[] comps = b.GetComponentsInChildren<Component>(true);
+                foreach (Component c in comps)
+                {
+                    if (c == null) continue;
+                    if (c is Text)
+                    {
+                        string t = ((Text)c).text;
+                        if (!string.IsNullOrEmpty(t) && t.Length <= 24) return "Text:" + t;
+                        continue;
+                    }
+                    Type ct = c.GetType();
+                    if (ct.Name.Contains("TextMesh") || ct.FullName.Contains("TextMesh"))
+                    {
+                        try
+                        {
+                            PropertyInfo pp = ct.GetProperty("text", BindingFlags.Public | BindingFlags.Instance);
+                            if (pp != null)
+                            {
+                                string t = pp.GetValue(c, null) as string;
+                                if (!string.IsNullOrEmpty(t) && t.Length <= 24) return ct.Name + ":" + t;
+                            }
+                        }
+                        catch (Exception) { }
+                    }
+                }
+            }
+            catch (Exception) { }
+            return null;
         }
 
         bool TryRegisterLiveToggle()
