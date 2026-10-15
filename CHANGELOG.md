@@ -1,5 +1,9 @@
 # ChangeLog
 
+## v1.7.11 (visual strip pairing)
+- Finds the real visual toolbar (the container holding Find) and pairs the
+  buttons there; KKAPI's logic container is no longer mistaken for the grid.
+
 ## v1.7.10 (toolbar census)
 - Pair log now lists every toolbar child with active state and icon tags, so a
   wrong match can be seen instead of guessed.

@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 namespace KK_KritaBridge
 {
-    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.10")]
+    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.11")]
     public class KKOneClick : BaseUnityPlugin
     {
         ConfigEntry<KeyCode> CaptureKey;
@@ -368,6 +368,74 @@ namespace KK_KritaBridge
         }
 
         GameObject FindButtonByIcon(Texture2D icon)
+        {
+            try
+            {
+                if (icon == null) return null;
+                Transform strip = StripWithFind();
+                if (strip != null)
+                {
+                    GameObject hit = FindIconUnder(strip, icon);
+                    if (hit != null) return hit;
+                }
+                return FindIconAnywhere(icon);
+            }
+            catch (Exception e)
+            {
+                Logger.LogError("FindIcon failed: " + e.Message);
+            }
+            return null;
+        }
+
+        Transform StripWithFind()
+        {
+            try
+            {
+                UnityEngine.Object[] objs = UnityEngine.Object.FindObjectsOfType(typeof(Button));
+                foreach (UnityEngine.Object o in objs)
+                {
+                    Button b = o as Button;
+                    if (b == null || !b.gameObject.activeInHierarchy) continue;
+                    Text[] texts = b.GetComponentsInChildren<Text>(true);
+                    foreach (Text t in texts)
+                    {
+                        if (t != null && t.text == "Find")
+                            return b.transform.parent;
+                    }
+                }
+            }
+            catch (Exception) { }
+            return null;
+        }
+
+        GameObject FindIconUnder(Transform root, Texture2D icon)
+        {
+            Button[] btns = root.GetComponentsInChildren<Button>(true);
+            foreach (Button b in btns)
+            {
+                if (b == null) continue;
+                Image[] imgs = b.GetComponentsInChildren<Image>(true);
+                foreach (Image im in imgs)
+                {
+                    if (im != null && im.sprite != null && im.sprite.texture == icon)
+                        return b.gameObject;
+                }
+            }
+            Toggle[] togs = root.GetComponentsInChildren<Toggle>(true);
+            foreach (Toggle tg in togs)
+            {
+                if (tg == null) continue;
+                Image[] imgs = tg.GetComponentsInChildren<Image>(true);
+                foreach (Image im in imgs)
+                {
+                    if (im != null && im.sprite != null && im.sprite.texture == icon)
+                        return tg.gameObject;
+                }
+            }
+            return null;
+        }
+
+        GameObject FindIconAnywhere(Texture2D icon)
         {
             try
             {
