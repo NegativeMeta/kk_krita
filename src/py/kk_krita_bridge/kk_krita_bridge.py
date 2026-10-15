@@ -128,7 +128,7 @@ try:
         def importCapture(self, payload):
             payload = payload.lstrip("﻿ \t\r\n")
             if payload.startswith("LIVE "):
-                importLive(self, payload[7:].strip())
+                importLive(self, payload[5:].strip())
                 return
             if not payload.startswith("IMPORT "):
                 return
