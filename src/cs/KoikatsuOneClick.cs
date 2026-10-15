@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 namespace KK_KritaBridge
 {
-    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.6")]
+    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.7")]
     public class KKOneClick : BaseUnityPlugin
     {
         ConfigEntry<KeyCode> CaptureKey;
@@ -354,8 +354,8 @@ namespace KK_KritaBridge
                 }
                 if (findIdx >= 0)
                 {
-                    myGo.transform.SetSiblingIndex(findIdx + 1);
-                    Logger.LogInfo("KKBridge: boton movido junto a Find");
+                    // Snapshot keeps its KKAPI spot; only bg matching runs.
+                    // Live is glued right below it by MaintainPairing.
                     if (AutoMatchBg.Value) TryMatchStockBg(parent.GetChild(findIdx).gameObject);
                 }
             }
@@ -369,6 +369,8 @@ namespace KK_KritaBridge
         {
             try
             {
+                GameObject self = GameObjectFrom(toolbarButton);
+                if (self != null) return self;
                 Type bt = toolbarButton.GetType();
                 PropertyInfo[] props = bt.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
                 foreach (PropertyInfo p in props)
@@ -381,16 +383,22 @@ namespace KK_KritaBridge
                     }
                     catch (Exception) { }
                 }
-                FieldInfo[] fields = bt.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                foreach (FieldInfo f in fields)
+                Type t = bt;
+                while (t != null)
                 {
-                    try
+                    FieldInfo[] fields = t.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+                    foreach (FieldInfo f in fields)
                     {
-                        GameObject go = GameObjectFrom(f.GetValue(toolbarButton));
-                        if (go != null) return go;
+                        try
+                        {
+                            GameObject go = GameObjectFrom(f.GetValue(toolbarButton));
+                            if (go != null) return go;
+                        }
+                        catch (Exception) { }
                     }
-                    catch (Exception) { }
+                    t = t.BaseType;
                 }
+                Logger.LogError("Extract GO found nothing, type=" + bt.FullName);
             }
             catch (Exception e)
             {

@@ -1,5 +1,10 @@
 # ChangeLog
 
+## v1.7.7 (pairing actually works)
+- Fixed GameObject extraction (direct result + private base-class fields), so the
+  live toggle is really found and glued right below the snapshot button.
+- Snapshot keeps its KKAPI spot; no more forced move next to Find.
+
 ## v1.7.6 (stacked: capture on top)
 - Snapshot button on top, live toggle glued right below it (same column).
 - Pairing diagnostics in the game log (KKBridge: pair ...).
