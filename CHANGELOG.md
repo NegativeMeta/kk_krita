@@ -1,5 +1,9 @@
 # ChangeLog
 
+## v1.7.2 (live verificado)
+- Fix path LIVE [5:] + protocolo tolerante a BOM + cero paths hardcodeados.
+- Estado final funcionando: toggle live actualiza la capa "KK live".
+
 ## v1.7.1 (live sin trabas)
 - Krita: anti-acumulacion (solo procesa el ultimo frame pendiente).
 - Juego: cache de Canvas 5s + intervalo 1000ms por defecto.
