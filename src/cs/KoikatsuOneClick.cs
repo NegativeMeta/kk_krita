@@ -37,9 +37,9 @@ namespace KK_KritaBridge
         {
             CaptureKey  = Config.Bind("Hotkey", "CaptureKey", KeyCode.F12);
             ShowButton  = Config.Bind("UI", "ShowButton", true, "Muestra el boton flotante para enviar a Krita");
-            BtnX  = Config.Bind("UI", "ButtonX", 8, "Posicion X del boton");
-            BtnY  = Config.Bind("UI", "ButtonY", 320, "Posicion Y del boton");
-            BtnSize  = Config.Bind("UI", "ButtonSize", 64, "Tamano del boton");
+            BtnX  = Config.Bind("UI", "ButtonX", 108, "Posicion X del boton");
+            BtnY  = Config.Bind("UI", "ButtonY", 593, "Posicion Y del boton");
+            BtnSize  = Config.Bind("UI", "ButtonSize", 42, "Tamano del boton");
             DockFind  = Config.Bind("UI", "DockFind", false, "Pegar el boton al lado de Find");
             windowRect = new Rect(BtnX.Value, BtnY.Value, BtnSize.Value, BtnSize.Value);
             LoadIcon();

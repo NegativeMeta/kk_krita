@@ -1,5 +1,9 @@
 # ChangeLog
 
+## v1.5.2 (junto a Find)
+- Defaults medidos de tu captura 1920x1080: boton 42px a la derecha de Find (108, 593).
+- cfg vivo actualizado con esos valores; DockFind off.
+
 ## v1.5.1 (posicion manual)
 - La barra del Studio es IMGUI (sin botones UGUI): anclaje automatico imposible.
 - Tamano configurable (UI > ButtonSize, 64 por defecto) y DockFind off por defecto.
