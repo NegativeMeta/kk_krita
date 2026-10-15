@@ -10,7 +10,7 @@ using UnityEngine.UI;
 
 namespace KK_KritaBridge
 {
-    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.4.0")]
+    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.5.0")]
     public class KKOneClick : BaseUnityPlugin
     {
         ConfigEntry<KeyCode> CaptureKey;
@@ -20,6 +20,9 @@ namespace KK_KritaBridge
         ConfigEntry<bool> ShowButton;
         ConfigEntry<int> BtnX;
         ConfigEntry<int> BtnY;
+        ConfigEntry<bool> DockFind;
+        RectTransform findRect;
+        int scanCooldown;
         bool hideOwnUI;
         const int windowId = 987121;
         Texture2D kritaIcon;
@@ -35,6 +38,7 @@ namespace KK_KritaBridge
             ShowButton  = Config.Bind("UI", "ShowButton", true, "Muestra el boton flotante para enviar a Krita");
             BtnX  = Config.Bind("UI", "ButtonX", 8, "Posicion X del boton");
             BtnY  = Config.Bind("UI", "ButtonY", 320, "Posicion Y del boton");
+            DockFind  = Config.Bind("UI", "DockFind", true, "Pegar el boton al lado de Find");
             windowRect = new Rect(BtnX.Value, BtnY.Value, 52, 52);
             LoadIcon();
             BridgeDir   = Config.Bind("Bridge", "BridgeDir", "UserData/krita_bridge");
@@ -53,20 +57,72 @@ namespace KK_KritaBridge
         {
             if (!ShowButton.Value || hideOwnUI) return;
             if (emptyWinStyle == null) emptyWinStyle = new GUIStyle();
+            if (DockFind.Value) DockToFind();
             windowRect = GUI.Window(windowId, windowRect, IconWindow, GUIContent.none, emptyWinStyle);
         }
 
         void IconWindow(int id)
         {
+            float s = Mathf.Min(windowRect.width, windowRect.height) - 4f;
+            if (s < 16f) s = 16f;
+            Rect r = new Rect((windowRect.width - s) / 2f, (windowRect.height - s) / 2f, s, s);
             if (kritaIcon != null)
             {
-                if (GUI.Button(new Rect(2, 2, 48, 48), kritaIcon)) CapturarYEnviar();
+                if (GUI.Button(r, kritaIcon)) CapturarYEnviar();
             }
-            else if (GUI.Button(new Rect(2, 2, 48, 48), "K"))
+            else if (GUI.Button(r, "K"))
             {
                 CapturarYEnviar();
             }
-            GUI.DragWindow();
+            if (!DockFind.Value) GUI.DragWindow();
+        }
+
+        void DockToFind()
+        {
+            try
+            {
+                if (findRect == null || ((scanCooldown++ % 60) == 0))
+                {
+                    bool had = (findRect != null);
+                    findRect = null;
+                    UnityEngine.Object[] objs = UnityEngine.Object.FindObjectsOfType(typeof(Button));
+                    foreach (UnityEngine.Object o in objs)
+                    {
+                        Button b = o as Button;
+                        if (b == null) continue;
+                        Text[] texts = b.GetComponentsInChildren<Text>(true);
+                        foreach (Text t in texts)
+                        {
+                            if (t != null && t.text == "Find") { findRect = b.transform as RectTransform; break; }
+                        }
+                        if (findRect != null) break;
+                    }
+                    if (findRect == null)
+                    {
+                        if (had) Logger.LogInfo("KKBridge: Find perdido, uso posicion manual");
+                    }
+                    else if (!had) Logger.LogInfo("KKBridge: anclado al boton Find");
+                }
+                if (findRect == null) return;
+                Vector3[] c = new Vector3[4];
+                findRect.GetWorldCorners(c);
+                Canvas cv = findRect.GetComponentInParent<Canvas>();
+                float x0 = c[0].x, y0 = c[0].y, x1 = c[2].x, y1 = c[2].y;
+                if (cv != null && cv.renderMode == RenderMode.ScreenSpaceCamera && cv.worldCamera != null)
+                {
+                    Vector3 bl = cv.worldCamera.WorldToScreenPoint(c[0]);
+                    Vector3 tr = cv.worldCamera.WorldToScreenPoint(c[2]);
+                    x0 = bl.x; y0 = bl.y; x1 = tr.x; y1 = tr.y;
+                }
+                float w = Mathf.Abs(x1 - x0);
+                float h = Mathf.Abs(y1 - y0);
+                if (w < 8f || h < 8f) return;
+                windowRect = new Rect(x0 - w - 4f, Screen.height - y1, w, h);
+            }
+            catch (Exception e)
+            {
+                Logger.LogError("Dock fallo: " + e.Message);
+            }
         }
 
         void LoadIcon()

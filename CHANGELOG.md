@@ -1,5 +1,10 @@
 # ChangeLog
 
+## v1.5.0 (anclado a Find)
+- El boton se pega a la celda izquierda de Find, mismo tamano, a cualquier resolucion.
+- Toggle UI > DockFind (off = flotante arrastrable manual).
+- Log "anclado al boton Find" o "Find perdido" para diagnosticar.
+
 ## v1.4.0 (boton icono Krita)
 - Boton cuadrado 48px arrastrable con el icono oficial de Krita (krita_icon.png junto al DLL).
 - Posicion persistente en settings (UI > ButtonX/ButtonY, se guarda al capturar).
