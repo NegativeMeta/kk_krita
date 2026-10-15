@@ -211,14 +211,15 @@ namespace KK_KritaBridge
             try
             {
                 int S = 32;
-                Color bg = new Color(0.25f, 0.25f, 0.25f, 1f);
+                Color bg = new Color(0.2f, 0.2f, 0.2f, 1f);
+                float m0 = 0.06f, m1 = 0.94f;
                 Texture2D dst = new Texture2D(S, S);
                 for (int y = 0; y < S; y++)
                 {
                     for (int x = 0; x < S; x++)
                     {
-                        float u = (float)x / (float)(S - 1);
-                        float v = (float)y / (float)(S - 1);
+                        float u = m0 + ((float)x / (float)(S - 1)) * (m1 - m0);
+                        float v = m0 + ((float)y / (float)(S - 1)) * (m1 - m0);
                         Color sc = src.GetPixelBilinear(u, v);
                         Color outc = sc * sc.a + bg * (1f - sc.a);
                         outc.a = 1f;
