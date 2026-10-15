@@ -1,5 +1,11 @@
 # ChangeLog
 
+## v1.7.16 (idempotent column restack)
+- Replaces the cell swap (which left overlapping buttons) with an idempotent
+  restack of the snapshot's column: live is inserted right below snapshot and the
+  whole column is re-laid on the measured grid, so repeats converge instead of piling up.
+- Logs column size, resulting rows and a collision check.
+
 ## v1.7.15 (direct position pairing)
 - The toolbar container has no LayoutGroup: positions are fixed by the game's own
   arrangement, so SetSiblingIndex never moved anything (logged adjacent=False).

@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 namespace KK_KritaBridge
 {
-    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.15")]
+    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.16")]
     public class KKOneClick : BaseUnityPlugin
     {
         ConfigEntry<KeyCode> CaptureKey;
@@ -821,18 +821,44 @@ namespace KK_KritaBridge
                 {
                     return;
                 }
-                int occ = NearestIndex(pos, want, colTol);
-                if (occ >= 0 && occ != li)
+
+                List<Transform> col = new List<Transform>();
+                List<float> colY = new List<float>();
+                for (int i = 0; i < nA; i++)
                 {
-                    Vector3 op = act[occ].transform.position;
-                    act[occ].transform.position = new Vector3(L.x, L.y, op.z);
+                    if (Mathf.Abs(pos[i].x - S.x) <= colTol)
+                    {
+                        col.Add(act[i]);
+                        colY.Add(pos[i].y);
+                    }
                 }
-                Vector3 lp = lt.transform.position;
-                lt.transform.position = new Vector3(want.x, want.y, lp.z);
-                Vector2 nowL = WorldCenter(lt.transform);
-                Logger.LogInfo("KKBridge: pair moved live (" + Mathf.Round(L.x) + "," + Mathf.Round(L.y) + ") -> ("
-                    + Mathf.Round(nowL.x) + "," + Mathf.Round(nowL.y) + ") want=(" + Mathf.Round(want.x) + "," + Mathf.Round(want.y)
-                    + ") occ=" + occ + " adjacent=" + AdjacentBelow(parent, nb.transform, lt.transform, colTol));
+                for (int a = 1; a < colY.Count; a++)
+                {
+                    for (int b = a; b > 0 && colY[b] > colY[b - 1]; b--)
+                    {
+                        float ty = colY[b]; colY[b] = colY[b - 1]; colY[b - 1] = ty;
+                        Transform tt = col[b]; col[b] = col[b - 1]; col[b - 1] = tt;
+                    }
+                }
+                int liCol = col.IndexOf(lt.transform);
+                if (liCol >= 0) { col.RemoveAt(liCol); colY.RemoveAt(liCol); }
+                int iS = col.IndexOf(nb.transform);
+                if (iS < 0)
+                {
+                    Logger.LogError("KKBridge: snap not in its own column list");
+                    return;
+                }
+                col.Insert(iS + 1, lt.transform);
+                float topY = (colY.Count > 0) ? colY[0] : S.y;
+                for (int k = 0; k < col.Count; k++)
+                {
+                    Vector3 cp = col[k].position;
+                    col[k].position = new Vector3(S.x, topY - (k * step), cp.z);
+                }
+                Logger.LogInfo("KKBridge: pair restacked col n=" + col.Count + " snapRow=" + iS + " liveRow=" + (iS + 1)
+                    + " topY=" + Mathf.Round(topY) + " step=" + step
+                    + " adjacent=" + AdjacentBelow(parent, nb.transform, lt.transform, colTol)
+                    + " collides=" + Collides(parent, nb.transform, lt.transform, colTol));
             }
             catch (Exception e)
             {
@@ -865,6 +891,24 @@ namespace KK_KritaBridge
                 if (d < bd && d <= tol) { bd = d; best = i; }
             }
             return best;
+        }
+
+        bool Collides(Transform parent, Transform a, Transform b, float tol)
+        {
+            try
+            {
+                for (int i = 0; i < parent.childCount; i++)
+                {
+                    Transform c = parent.GetChild(i);
+                    if (c == null || !c.gameObject.activeInHierarchy) continue;
+                    if (c == a || c == b) continue;
+                    Vector2 p = WorldCenter(c);
+                    if (Vector2.Distance(p, WorldCenter(a)) < tol) return true;
+                    if (Vector2.Distance(p, WorldCenter(b)) < tol) return true;
+                }
+            }
+            catch (Exception) { }
+            return false;
         }
 
         Vector2 WorldCenter(Transform t)
