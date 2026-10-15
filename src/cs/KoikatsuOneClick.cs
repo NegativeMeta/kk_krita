@@ -550,7 +550,7 @@ namespace KK_KritaBridge
             {
                 using (TcpClient client = new TcpClient(TargetHost.Value, TargetPort.Value))
                 using (NetworkStream stream = client.GetStream())
-                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(stream, new UTF8Encoding(false)))
                 {
                     writer.Write(msg);
                     writer.Flush();
@@ -697,7 +697,7 @@ namespace KK_KritaBridge
                     {
                         using (var client = new TcpClient(TargetHost.Value, TargetPort.Value))
                         using (var stream = client.GetStream())
-                        using (var writer = new StreamWriter(stream, Encoding.UTF8))
+                        using (var writer = new StreamWriter(stream, new UTF8Encoding(false)))
                         {
                             writer.Write("IMPORT " + file);
                             writer.Flush();

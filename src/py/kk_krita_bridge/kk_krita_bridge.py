@@ -126,6 +126,7 @@ try:
 
         @_Slot(str)
         def importCapture(self, payload):
+            payload = payload.lstrip("﻿ \t\r\n")
             if payload.startswith("LIVE "):
                 importLive(self, payload[7:].strip())
                 return
