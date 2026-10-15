@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 namespace KK_KritaBridge
 {
-    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.16")]
+    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.17")]
     public class KKOneClick : BaseUnityPlugin
     {
         ConfigEntry<KeyCode> CaptureKey;
@@ -42,6 +42,10 @@ namespace KK_KritaBridge
         object nativeEntry;
         object liveEntry;
         string lastPairKey = "";
+        bool pairDone;
+        int pairAttempts;
+        int stableCount;
+        float stableRefX, stableRefY, stableRefLx, stableRefLy;
         const int windowId = 987121;
         Texture2D kritaIcon;
         Texture2D liveIcon32;
@@ -777,6 +781,7 @@ namespace KK_KritaBridge
         {
             try
             {
+                if (pairDone || pairAttempts >= 4) return;
                 GameObject nb = FindButtonByIcon(nativeIcon);
                 if (nb == null) nb = ControlObjectOf(nativeEntry);
                 GameObject lt = FindButtonByIcon(liveIcon32);
@@ -811,52 +816,46 @@ namespace KK_KritaBridge
                 float colTol = Mathf.Max(1f, ColStep(act) * 0.5f);
                 float step = SameColStep(pos, si, colTol);
                 Vector2 want = new Vector2(S.x, S.y - step);
-                float gap = S.y - L.y;
+
+                if (S.sqrMagnitude < 1f || L.sqrMagnitude < 1f) return;
+
+                if (Mathf.Abs(S.x - stableRefX) < 0.5f && Mathf.Abs(S.y - stableRefY) < 0.5f
+                    && Mathf.Abs(L.x - stableRefLx) < 0.5f && Mathf.Abs(L.y - stableRefLy) < 0.5f)
+                {
+                    stableCount++;
+                }
+                else
+                {
+                    stableCount = 0;
+                    stableRefX = S.x; stableRefY = S.y;
+                    stableRefLx = L.x; stableRefLy = L.y;
+                }
+                if (stableCount < 2) return;
 
                 LogPairKey("n=" + nA + " cols=" + CountCols(act, colTol) + " snap=(" + Mathf.Round(S.x) + "," + Mathf.Round(S.y)
                     + ") live=(" + Mathf.Round(L.x) + "," + Mathf.Round(L.y) + ") step=" + step
-                    + " gapY=" + Mathf.Round(gap) + " want=(" + Mathf.Round(want.x) + "," + Mathf.Round(want.y) + ")", parent);
+                    + " gapY=" + Mathf.Round(S.y - L.y) + " want=(" + Mathf.Round(want.x) + "," + Mathf.Round(want.y) + ")", parent);
 
                 if (Mathf.Abs(L.x - want.x) <= 1f && Mathf.Abs(L.y - want.y) <= 2f)
                 {
+                    pairDone = true;
+                    Logger.LogInfo("KKBridge: pair verified live directly below snap");
                     return;
                 }
 
-                List<Transform> col = new List<Transform>();
-                List<float> colY = new List<float>();
-                for (int i = 0; i < nA; i++)
+                int occ = NearestIndex(pos, want, colTol);
+                if (occ >= 0 && occ != li)
                 {
-                    if (Mathf.Abs(pos[i].x - S.x) <= colTol)
-                    {
-                        col.Add(act[i]);
-                        colY.Add(pos[i].y);
-                    }
+                    Vector3 op = act[occ].transform.position;
+                    act[occ].transform.position = new Vector3(L.x, L.y, op.z);
                 }
-                for (int a = 1; a < colY.Count; a++)
-                {
-                    for (int b = a; b > 0 && colY[b] > colY[b - 1]; b--)
-                    {
-                        float ty = colY[b]; colY[b] = colY[b - 1]; colY[b - 1] = ty;
-                        Transform tt = col[b]; col[b] = col[b - 1]; col[b - 1] = tt;
-                    }
-                }
-                int liCol = col.IndexOf(lt.transform);
-                if (liCol >= 0) { col.RemoveAt(liCol); colY.RemoveAt(liCol); }
-                int iS = col.IndexOf(nb.transform);
-                if (iS < 0)
-                {
-                    Logger.LogError("KKBridge: snap not in its own column list");
-                    return;
-                }
-                col.Insert(iS + 1, lt.transform);
-                float topY = (colY.Count > 0) ? colY[0] : S.y;
-                for (int k = 0; k < col.Count; k++)
-                {
-                    Vector3 cp = col[k].position;
-                    col[k].position = new Vector3(S.x, topY - (k * step), cp.z);
-                }
-                Logger.LogInfo("KKBridge: pair restacked col n=" + col.Count + " snapRow=" + iS + " liveRow=" + (iS + 1)
-                    + " topY=" + Mathf.Round(topY) + " step=" + step
+                Vector3 lp = lt.transform.position;
+                lt.transform.position = new Vector3(want.x, want.y, lp.z);
+                pairAttempts++;
+                stableCount = 0;
+                Logger.LogInfo("KKBridge: pair applied attempt=" + pairAttempts
+                    + " live " + Mathf.Round(L.x) + "," + Mathf.Round(L.y)
+                    + " -> " + Mathf.Round(want.x) + "," + Mathf.Round(want.y) + " occ=" + occ
                     + " adjacent=" + AdjacentBelow(parent, nb.transform, lt.transform, colTol)
                     + " collides=" + Collides(parent, nb.transform, lt.transform, colTol));
             }

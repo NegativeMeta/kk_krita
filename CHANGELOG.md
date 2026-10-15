@@ -1,5 +1,11 @@
 # ChangeLog
 
+## v1.7.17 (surgical pairing, settled layout)
+- Only our two buttons move (plus the single occupant of the target cell), so the
+  rest of the strip keeps the game's own alignment.
+- Waits until button positions are stable before acting, applies at most 4 times
+  total, then confirms and stops (no more churn).
+
 ## v1.7.16 (idempotent column restack)
 - Replaces the cell swap (which left overlapping buttons) with an idempotent
   restack of the snapshot's column: live is inserted right below snapshot and the
