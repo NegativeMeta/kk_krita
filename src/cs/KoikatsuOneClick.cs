@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 namespace KK_KritaBridge
 {
-    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.13")]
+    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.14")]
     public class KKOneClick : BaseUnityPlugin
     {
         ConfigEntry<KeyCode> CaptureKey;
@@ -792,21 +792,136 @@ namespace KK_KritaBridge
                     LogPairKey("noparent", null);
                     return;
                 }
-                int n = parent.childCount;
-                if (n < 2) return;
-                int snapIdx = nb.transform.GetSiblingIndex();
-                int liveIdx = lt.transform.GetSiblingIndex();
-                int target = snapIdx + 1;
-                if (target >= n) target = n - 1;
-                LogPairKey("n=" + n + " snap=" + snapIdx + " live=" + liveIdx + " tgt=" + target, parent);
-                if (liveIdx != target)
+                List<Transform> act = new List<Transform>();
+                for (int i = 0; i < parent.childCount; i++)
                 {
-                    lt.transform.SetSiblingIndex(target);
+                    Transform c = parent.GetChild(i);
+                    if (c != null && c.gameObject.activeInHierarchy) act.Add(c);
+                }
+                int nA = act.Count;
+                if (nA < 3) return;
+                int si = act.IndexOf(nb.transform);
+                int li = act.IndexOf(lt.transform);
+                if (si < 0 || li < 0)
+                {
+                    LogPairKey("notinlist n=" + nA + " si=" + si + " li=" + li, null);
+                    return;
+                }
+                Vector2 sPos = WorldCenter(nb.transform);
+                float colTol = Mathf.Max(1f, ColStep(act) * 0.5f);
+
+                int targetA = -1;
+                float bestDy = float.MaxValue;
+                for (int k = 0; k < nA; k++)
+                {
+                    if (k == si) continue;
+                    Vector2 p = WorldCenter(act[k]);
+                    if (Mathf.Abs(p.x - sPos.x) > colTol) continue;
+                    float dy = sPos.y - p.y;
+                    if (dy > 1f && dy < bestDy) { bestDy = dy; targetA = k; }
+                }
+                if (targetA < 0)
+                {
+                    int cols = CountCols(act, colTol);
+                    targetA = si + cols;
+                    if (targetA >= nA) targetA = nA - 1;
+                    if (targetA <= si) targetA = Mathf.Min(si + 1, nA - 1);
+                }
+                int targetSib = act[targetA].GetSiblingIndex();
+                int liveSib = lt.transform.GetSiblingIndex();
+
+                LogPairKey("n=" + nA + " cols=" + CountCols(act, colTol) + " si=" + si + " li=" + li
+                    + " liveSib=" + liveSib + " tgtA=" + targetA + " tgtSib=" + targetSib, parent);
+
+                if (liveSib != targetSib)
+                {
+                    lt.transform.SetSiblingIndex(targetSib);
+                    Logger.LogInfo("KKBridge: pair applied liveSib " + liveSib + " -> " + lt.transform.GetSiblingIndex()
+                        + " want=" + targetSib + " adjacent=" + AdjacentBelow(parent, nb.transform, lt.transform, colTol));
+                }
+                else
+                {
+                    Logger.LogInfo("KKBridge: pair order ignored liveSib=" + liveSib + " li=" + li
+                        + " tgtA=" + targetA + " adjacent=" + AdjacentBelow(parent, nb.transform, lt.transform, colTol));
                 }
             }
             catch (Exception e)
             {
                 Logger.LogError("MaintainPair failed: " + e.Message);
+            }
+        }
+
+        Vector2 WorldCenter(Transform t)
+        {
+            try
+            {
+                RectTransform rt = t as RectTransform;
+                if (rt == null) return new Vector2(t.position.x, t.position.y);
+                Vector3[] c = new Vector3[4];
+                rt.GetWorldCorners(c);
+                return new Vector2((c[0].x + c[2].x) * 0.5f, (c[0].y + c[2].y) * 0.5f);
+            }
+            catch (Exception)
+            {
+                return new Vector2(0f, 0f);
+            }
+        }
+
+        float ColStep(List<Transform> act)
+        {
+            float step = float.MaxValue;
+            List<float> xs = new List<float>();
+            foreach (Transform t in act)
+            {
+                float x = WorldCenter(t).x;
+                bool dup = false;
+                foreach (float v in xs) { if (Mathf.Abs(v - x) < 1f) { dup = true; break; } }
+                if (!dup) xs.Add(x);
+            }
+            xs.Sort();
+            for (int i = 1; i < xs.Count; i++)
+            {
+                float d = xs[i] - xs[i - 1];
+                if (d > 1f && d < step) step = d;
+            }
+            return (step == float.MaxValue) ? 1f : step;
+        }
+
+        int CountCols(List<Transform> act, float tol)
+        {
+            List<float> xs = new List<float>();
+            foreach (Transform t in act)
+            {
+                float x = WorldCenter(t).x;
+                bool dup = false;
+                foreach (float v in xs) { if (Mathf.Abs(v - x) <= tol) { dup = true; break; } }
+                if (!dup) xs.Add(x);
+            }
+            return Mathf.Max(1, xs.Count);
+        }
+
+        bool AdjacentBelow(Transform parent, Transform above, Transform below, float tol)
+        {
+            try
+            {
+                Vector2 a = WorldCenter(above);
+                Vector2 b = WorldCenter(below);
+                if (Mathf.Abs(a.x - b.x) > tol) return false;
+                if (b.y >= a.y) return false;
+                for (int i = 0; i < parent.childCount; i++)
+                {
+                    Transform c = parent.GetChild(i);
+                    if (c == null || !c.gameObject.activeInHierarchy) continue;
+                    if (c == above || c == below) continue;
+                    Vector2 p = WorldCenter(c);
+                    if (Mathf.Abs(p.x - a.x) > tol) continue;
+                    if (p.y < a.y && p.y > b.y) return false;
+                }
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
             }
         }
 
@@ -816,6 +931,28 @@ namespace KK_KritaBridge
             lastPairKey = key;
             Logger.LogInfo("KKBridge: pair " + key);
             if (parent == null) return;
+            try
+            {
+                int actKids = 0;
+                for (int i = 0; i < parent.childCount; i++)
+                {
+                    Transform cc = parent.GetChild(i);
+                    if (cc != null && cc.gameObject.activeInHierarchy) actKids++;
+                }
+                Logger.LogInfo("KKB-PARENT " + parent.name + " sib=" + parent.GetSiblingIndex()
+                    + " actKids=" + actKids);
+                Component[] comps = parent.GetComponents<Component>();
+                foreach (Component c in comps)
+                {
+                    if (c == null) continue;
+                    Logger.LogInfo("KKB-COMP " + c.GetType().Name);
+                }
+                RectTransform prt = parent as RectTransform;
+                if (prt != null)
+                    Logger.LogInfo("KKB-PARENTRECT pos=" + prt.rect.width + "x" + prt.rect.height + " anchored=" + prt.anchoredPosition);
+            }
+            catch (Exception) { }
+            int actIdx = 0;
             for (int i = 0; i < parent.childCount; i++)
             {
                 try
@@ -830,25 +967,13 @@ namespace KK_KritaBridge
                         if (im.sprite.texture == nativeIcon) tag += "[SNAP]";
                         if (im.sprite.texture == liveIcon32) tag += "[LIVE]";
                     }
-                    Logger.LogInfo("KKB-TOOLBAR child " + i + ": " + c.name + " active=" + c.gameObject.activeInHierarchy + tag);
+                    Vector2 wc = WorldCenter(c);
+                    bool actv = c.gameObject.activeInHierarchy;
+                    Logger.LogInfo("KKB-TOOLBAR child " + i + " act=" + (actv ? (actIdx++) : -1) + ": " + c.name
+                        + " x=" + Mathf.Round(wc.x) + " y=" + Mathf.Round(wc.y) + tag);
                 }
                 catch (Exception) { }
             }
-            try
-            {
-                UnityEngine.Object[] allb = UnityEngine.Object.FindObjectsOfType(typeof(Button));
-                int shown = 0;
-                foreach (UnityEngine.Object o in allb)
-                {
-                    Button b = o as Button;
-                    if (b == null || !b.gameObject.activeInHierarchy) continue;
-                    string label = ButtonLabel(b);
-                    if (label == null) continue;
-                    if (shown++ > 25) break;
-                    Logger.LogInfo("KKB-LABEL: " + label + " root=" + b.transform.root.name);
-                }
-            }
-            catch (Exception) { }
         }
 
         string ButtonLabel(Button b)

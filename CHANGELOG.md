@@ -1,5 +1,11 @@
 # ChangeLog
 
+## v1.7.14 (geometry-driven pairing)
+- Pairing is computed from real button positions in the visible grid (finds the
+  cell directly below the snapshot button) instead of "next sibling index".
+- Logs each toolbar cell with x/y, the container's layout components and whether
+  the reorder actually took effect (adjacent true/false).
+
 ## v1.7.13 (leftmost match wins)
 - When several copies of a button exist (KKAPI logic objects vs visible clones),
   pairing uses the leftmost active one — the one actually drawn in the strip.
