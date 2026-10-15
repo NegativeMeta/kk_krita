@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 namespace KK_KritaBridge
 {
-    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.4")]
+    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.5")]
     public class KKOneClick : BaseUnityPlugin
     {
         ConfigEntry<KeyCode> CaptureKey;
@@ -41,7 +41,6 @@ namespace KK_KritaBridge
         float cachedAt;
         GameObject nativeButtonGo;
         GameObject liveToggleGo;
-        bool livePaired;
         const int windowId = 987121;
         Texture2D kritaIcon;
         Rect windowRect;
@@ -86,6 +85,7 @@ namespace KK_KritaBridge
             if (Input.GetKeyDown(CaptureKey.Value)) CapturarYEnviar();
             if (!nativeOk && ((frame++ % 120) == 0)) nativeOk = TryRegisterNativeButton();
             if (!liveToggleOk && ((frame++ % 240) == 0)) liveToggleOk = TryRegisterLiveToggle();
+            if ((frame % 300) == 0) PairLiveToggle();
             if (liveOn && Time.realtimeSinceStartup >= nextLiveAt)
             {
                 nextLiveAt = Time.realtimeSinceStartup + (float)LiveIntervalMs.Value / 1000f;
@@ -612,17 +612,67 @@ namespace KK_KritaBridge
 
         void PairLiveToggle()
         {
+            MaintainPairing();
+        }
+
+        void MaintainPairing()
+        {
             try
             {
-                if (livePaired || nativeButtonGo == null || liveToggleGo == null) return;
-                if (nativeButtonGo.transform.parent != liveToggleGo.transform.parent) return;
-                liveToggleGo.transform.SetSiblingIndex(nativeButtonGo.transform.GetSiblingIndex() + 1);
-                livePaired = true;
-                Logger.LogInfo("KKBridge: botones lado a lado");
+                if (nativeButtonGo == null || liveToggleGo == null) return;
+                Transform parent = nativeButtonGo.transform.parent;
+                if (parent == null || parent != liveToggleGo.transform.parent) return;
+                int n = parent.childCount;
+                if (n < 3) return;
+                int snapIdx = nativeButtonGo.transform.GetSiblingIndex();
+                int liveIdx = liveToggleGo.transform.GetSiblingIndex();
+                int target = ComputeLiveTarget(parent, snapIdx, n);
+                if (target < 0 || target >= n) return;
+                if (liveIdx != target)
+                {
+                    liveToggleGo.transform.SetSiblingIndex(target);
+                    Logger.LogInfo("KKBridge: botones lado a lado");
+                }
             }
             catch (Exception e)
             {
-                Logger.LogError("Pair failed: " + e.Message);
+                Logger.LogError("MaintainPair failed: " + e.Message);
+            }
+        }
+
+        int ComputeLiveTarget(Transform parent, int snapIdx, int n)
+        {
+            try
+            {
+                Vector3 p0 = ChildCenter(parent.GetChild(0));
+                Vector3 p1 = ChildCenter(parent.GetChild(1));
+                bool rowMajor = Mathf.Abs(p1.x - p0.x) > Mathf.Abs(p1.y - p0.y);
+                if (rowMajor)
+                {
+                    return (snapIdx % 2 == 0) ? snapIdx + 1 : snapIdx - 1;
+                }
+                int R = (n + 1) / 2;
+                return (snapIdx < R) ? snapIdx + R : snapIdx - R;
+            }
+            catch (Exception)
+            {
+                return snapIdx + 1;
+            }
+        }
+
+        Vector3 ChildCenter(Transform t)
+        {
+            try
+            {
+                RectTransform rt = t as RectTransform;
+                if (rt == null) return t.position;
+                Vector3[] c = new Vector3[4];
+                rt.GetWorldCorners(c);
+                return (c[0] + c[2]) * 0.5f;
+            }
+            catch (Exception)
+            {
+                return t.position;
             }
         }
 

@@ -1,5 +1,9 @@
 # ChangeLog
 
+## v1.7.5 (same-row pairing)
+- Detects the toolbar fill direction from real button positions and keeps both
+  buttons in the same row (works with vertical or horizontal grids, re-checked live).
+
 ## v1.7.4 (paired buttons)
 - Live toggle docks right after the snapshot button: both stay side by side.
 
