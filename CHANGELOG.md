@@ -1,5 +1,11 @@
 # ChangeLog
 
+## v1.7.18 (reliable live lookup + visible gate)
+- Live button is looked up inside the snapshot's own container first (the method
+  that already proved to work in the census), then globally, then via KKAPI handle.
+- Layout-stability tolerance raised to 2px and the gate state is logged, so a
+  blocked run is visible instead of silent.
+
 ## v1.7.17 (surgical pairing, settled layout)
 - Only our two buttons move (plus the single occupant of the target cell), so the
   rest of the strip keeps the game's own alignment.

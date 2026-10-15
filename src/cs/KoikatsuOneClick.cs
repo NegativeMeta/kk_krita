@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 namespace KK_KritaBridge
 {
-    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.17")]
+    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.18")]
     public class KKOneClick : BaseUnityPlugin
     {
         ConfigEntry<KeyCode> CaptureKey;
@@ -369,6 +369,26 @@ namespace KK_KritaBridge
             {
                 Logger.LogError("Toolbar order failed: " + e.Message);
             }
+        }
+
+        Transform FindLiveInParent(Transform parent, Texture2D icon)
+        {
+            try
+            {
+                if (parent == null || icon == null) return null;
+                for (int i = 0; i < parent.childCount; i++)
+                {
+                    Transform c = parent.GetChild(i);
+                    if (c == null) continue;
+                    Image[] imgs = c.GetComponentsInChildren<Image>(true);
+                    foreach (Image im in imgs)
+                    {
+                        if (im != null && im.sprite != null && im.sprite.texture == icon) return c;
+                    }
+                }
+            }
+            catch (Exception) { }
+            return null;
         }
 
         GameObject FindButtonByIcon(Texture2D icon)
@@ -784,17 +804,36 @@ namespace KK_KritaBridge
                 if (pairDone || pairAttempts >= 4) return;
                 GameObject nb = FindButtonByIcon(nativeIcon);
                 if (nb == null) nb = ControlObjectOf(nativeEntry);
-                GameObject lt = FindButtonByIcon(liveIcon32);
-                if (lt == null) lt = ControlObjectOf(liveEntry);
-                if (nb == null || lt == null)
+                if (nb == null)
                 {
-                    LogPairKey("nocontrol nb=" + (nb != null) + " lt=" + (lt != null), null);
+                    LogPairKey("nosnap", null);
                     return;
                 }
                 Transform parent = nb.transform.parent;
-                if (parent == null || parent != lt.transform.parent)
+                if (parent == null) return;
+
+                string how = "";
+                GameObject lt = null;
+                Transform ltT = FindLiveInParent(parent, liveIcon32);
+                if (ltT != null) { lt = ltT.gameObject; how = "parent"; }
+                if (lt == null)
                 {
-                    LogPairKey("noparent", null);
+                    lt = FindButtonByIcon(liveIcon32);
+                    if (lt != null) how = "global";
+                }
+                if (lt == null)
+                {
+                    lt = ControlObjectOf(liveEntry);
+                    if (lt != null) how = "control";
+                }
+                if (lt == null)
+                {
+                    LogPairKey("nolive icon=" + (liveIcon32 != null), null);
+                    return;
+                }
+                if (lt.transform.parent != parent)
+                {
+                    LogPairKey("otherparent how=" + how, null);
                     return;
                 }
                 List<Transform> act = new List<Transform>();
@@ -819,8 +858,8 @@ namespace KK_KritaBridge
 
                 if (S.sqrMagnitude < 1f || L.sqrMagnitude < 1f) return;
 
-                if (Mathf.Abs(S.x - stableRefX) < 0.5f && Mathf.Abs(S.y - stableRefY) < 0.5f
-                    && Mathf.Abs(L.x - stableRefLx) < 0.5f && Mathf.Abs(L.y - stableRefLy) < 0.5f)
+                if (Mathf.Abs(S.x - stableRefX) <= 2f && Mathf.Abs(S.y - stableRefY) <= 2f
+                    && Mathf.Abs(L.x - stableRefLx) <= 2f && Mathf.Abs(L.y - stableRefLy) <= 2f)
                 {
                     stableCount++;
                 }
@@ -830,11 +869,13 @@ namespace KK_KritaBridge
                     stableRefX = S.x; stableRefY = S.y;
                     stableRefLx = L.x; stableRefLy = L.y;
                 }
-                if (stableCount < 2) return;
 
-                LogPairKey("n=" + nA + " cols=" + CountCols(act, colTol) + " snap=(" + Mathf.Round(S.x) + "," + Mathf.Round(S.y)
+                LogPairKey("how=" + how + " n=" + nA + " cols=" + CountCols(act, colTol)
+                    + " snap=(" + Mathf.Round(S.x) + "," + Mathf.Round(S.y)
                     + ") live=(" + Mathf.Round(L.x) + "," + Mathf.Round(L.y) + ") step=" + step
-                    + " gapY=" + Mathf.Round(S.y - L.y) + " want=(" + Mathf.Round(want.x) + "," + Mathf.Round(want.y) + ")", parent);
+                    + " want=(" + Mathf.Round(want.x) + "," + Mathf.Round(want.y) + ") stable=" + stableCount, parent);
+
+                if (stableCount < 2) return;
 
                 if (Mathf.Abs(L.x - want.x) <= 1f && Mathf.Abs(L.y - want.y) <= 2f)
                 {
