@@ -1,93 +1,93 @@
 # ChangeLog
 
-## v1.7.2 (live verificado)
-- Fix path LIVE [5:] + protocolo tolerante a BOM + cero paths hardcodeados.
-- Estado final funcionando: toggle live actualiza la capa "KK live".
+## v1.7.2 (verified live)
+- Fix LIVE path slice [5:] + BOM-tolerant protocol + zero hardcoded paths.
+- Final working state: live toggle updates the "KK live" layer.
 
-## v1.7.1 (live sin trabas)
-- Krita: anti-acumulacion (solo procesa el ultimo frame pendiente).
-- Juego: cache de Canvas 5s + intervalo 1000ms por defecto.
+## v1.7.1 (judder-free live)
+- Krita: anti pile-up (only the latest pending frame is processed).
+- Game: 5s Canvas cache + 1000ms default interval.
 
-## v1.7.0 (modo live)
-- Toggle nativo en toolbar: captura cada IntervalMs (500) solo si cambia la escena.
-- Deteccion por mini-render 160x90 + diff (ThresholdPct 2); primer frame siempre se envia.
-- Krita actualiza la capa "KK live" in-place, sin popups; backoff 5s si Krita no escucha.
+## v1.7.0 (live mode)
+- Native toolbar toggle: captures every IntervalMs (500) only when the scene changes.
+- Detection via 160x90 mini-render + diff (ThresholdPct 2); first frame always sent.
+- Krita updates the "KK live" layer in place, no popups; 5s backoff when Krita is not listening.
 
-## v1.6.6 (margen correcto)
-- Fix: el margen ahora si achica el icono (antes hacia zoom invertido).
+## v1.6.6 (correct margin)
+- Fix: margin now actually shrinks the icon (it used to zoom inversely).
 
-## v1.6.5 (margen icono)
-- IconMargin % configurable con vista en vivo (12 por defecto).
+## v1.6.5 (icon margin)
+- IconMargin % configurable with live preview (12 by default).
 
-## v1.6.4 (degradado)
-- Fondo con degradado vertical claro-arriba/oscuro-abajo como los originales.
-- Auto-muestreo superior+inferior del boton Find; override manual Top/Bottom.
+## v1.6.4 (gradient)
+- Vertical gradient background, light on top / dark at bottom, like the stock buttons.
+- Top+bottom auto-sampling of the Find button; manual Top/Bottom override.
 
-## v1.6.3 (gris auto)
-- Auto-muestrea el gris del boton Find real y lo aplica (override manual: UI > ButtonBg).
-- Default 60 + re-render en vivo al cambiar el valor.
+## v1.6.3 (auto gray)
+- Auto-samples the gray of the real Find button and applies it (manual override: UI > ButtonBg).
+- Default 60 + live re-render when the value changes.
 
-## v1.6.1 (fondo + orden)
-- Icono 32x32 con fondo gris oscuro horneado y esquinas redondeadas.
-- Reordena el boton junto a Find via jerarquia (log KKB-TOOLBAR con los hijos).
+## v1.6.1 (background + order)
+- 32x32 icon with baked dark-gray background and rounded corners.
+- Reorders the button next to Find via hierarchy (KKB-TOOLBAR log with children).
 
-## v1.6.0 (boton nativo toolbar)
-- Registro en la toolbar del Studio via KKAPI CustomToolbarButtons por reflexion (como KKPE/Timeline).
-- Icono 32x32 + reintento cada 2s hasta registrar; flotante queda de respaldo.
-- Boton oscuro plano para igualar la grilla.
+## v1.6.0 (native toolbar button)
+- Studio toolbar registration via KKAPI CustomToolbarButtons through reflection (like KKPE/Timeline).
+- 32x32 icon + retry every 2s until registered; floating button stays as fallback.
+- Flat dark button to match the grid.
 
-## v1.5.2 (junto a Find)
-- Defaults medidos de tu captura 1920x1080: boton 42px a la derecha de Find (108, 593).
-- cfg vivo actualizado con esos valores; DockFind off.
+## v1.5.2 (next to Find)
+- Defaults measured from your 1920x1080 capture: 42px button right of Find (108, 593).
+- Live cfg updated with those values; DockFind off.
 
-## v1.5.1 (posicion manual)
-- La barra del Studio es IMGUI (sin botones UGUI): anclaje automatico imposible.
-- Tamano configurable (UI > ButtonSize, 64 por defecto) y DockFind off por defecto.
-- Arrastrar a mano junto a Find; la posicion se guarda al capturar.
+## v1.5.1 (manual placement)
+- The Studio bar is IMGUI (no UGUI buttons): automatic docking impossible.
+- Configurable size (UI > ButtonSize, 64 by default) and DockFind off by default.
+- Drag by hand next to Find; position is saved on capture.
 
-## v1.5.0 (anclado a Find)
-- El boton se pega a la celda izquierda de Find, mismo tamano, a cualquier resolucion.
-- Toggle UI > DockFind (off = flotante arrastrable manual).
-- Log "anclado al boton Find" o "Find perdido" para diagnosticar.
+## v1.5.0 (docked to Find)
+- Button sticks to the left cell of Find, same size, at any resolution.
+- UI > DockFind toggle (off = manual draggable floating).
+- "docked to Find button" / "Find lost" log for diagnostics.
 
-## v1.4.0 (boton icono Krita)
-- Boton cuadrado 48px arrastrable con el icono oficial de Krita (krita_icon.png junto al DLL).
-- Posicion persistente en settings (UI > ButtonX/ButtonY, se guarda al capturar).
-- Fallback a boton "K" si falta el icono.
+## v1.4.0 (Krita icon button)
+- Draggable 48px square button with the official Krita icon (krita_icon.png next to the DLL).
+- Persistent position in settings (UI > ButtonX/ButtonY, saved on capture).
+- Fallback to "K" button when the icon is missing.
 
-## v1.3.0 (boton flotante)
-- Ventana IMGUI arrastrable "KK Krita" con boton "A Krita" (no sale en la captura).
-- Toggle en settings: UI > ShowButton (ConfigurationManager lo muestra solo).
-- El boton se oculta durante el render por seguridad.
+## v1.3.0 (floating button)
+- Draggable "KK Krita" IMGUI window with an "A Krita" button (excluded from captures).
+- Settings toggle: UI > ShowButton (ConfigurationManager shows it automatically).
+- Button hidden during render as a safeguard.
 
 ## v1.2.1 (final)
-- Exito silencioso: sin popup al importar, solo avisos en caso de error.
-- Estado verificado funcionando: captura limpia sin UI + capa nueva en Krita.
+- Silent success: no popup on import, warnings only on errors.
+- Verified working state: clean capture without UI + new layer in Krita.
 
-## v1.2.0 (captura limpia)
-- Render solo de Camera.main a RenderTexture (la UI IMGUI no se dibuja ahi).
-- Canvas UGUI apagados durante el render y restaurados despues (estilo Screencap).
-- Log de todas las camaras (nombre/depth/rect) para diagnosticar angulo.
-- Nota: con el juego abierto el DLL queda bloqueado; cerrar el juego para actualizar.
+## v1.2.0 (clean capture)
+- Camera.main-only render to RenderTexture (IMGUI UI is not drawn there).
+- UGUI Canvases disabled during render and restored afterwards (Screencap style).
+- Log of every camera (name/depth/rect) to diagnose angles.
+- Note: with the game open the DLL stays locked; close the game to update.
 
-## v1.1.5 (Krita 6 ABC completo)
-- Autorregistro con Krita.instance().addExtension (Krita 6 no llama a createExtension).
-- Overrides setup() y createActions() exigidos por la clase base abstracta.
-- Marcador import-top y guardias para fallos silenciosos.
-- Quitado X-Krita-AutoStart del .desktop (igual que plugins que funcionan).
+## v1.1.5 (full Krita 6 ABC)
+- Self-registration with Krita.instance().addExtension (Krita 6 never calls createExtension).
+- setup() and createActions() overrides required by the abstract base class.
+- import-top marker and guards against silent failures.
+- Removed X-Krita-AutoStart from .desktop (same as working plugins).
 
 ## v1.1.3 (PyQt6)
-- Krita 6.0.4 trae PyQt6 6.8.1 (ni PyQt5 ni PySide6). Cadena: PyQt6 -> PySide6 -> PyQt5.
-- Verificado contra ai_diffusion, que usa from PyQt6... pyqtSignal en el mismo Krita.
+- Real Krita is 6.0.4/Qt6: ships PyQt6 6.8.1 (neither PyQt5 nor PySide6). Chain: PyQt6 -> PySide6 -> PyQt5.
+- Verified against ai_diffusion, which uses from PyQt6... pyqtSignal in the same Krita.
 
 ## v1.1.2 (Krita 6)
-- Krita real es 6.0.4/Qt6: usa PySide6, no PyQt5. Import dual con fallback.
-- Causa del "connection refused": el plugin nunca arranco por el import.
+- Real Krita is 6.0.4/Qt6: uses PySide6, not PyQt5. Dual import with fallback.
+- Cause of "connection refused": the plugin never started because of the import.
 
 ## v1.1.1 (connection diagnostics)
-- C#: 3 intentos de TCP con pausa de 500ms; mensaje claro si Krita no escucha.
-- Krita: log en UserData/krita_bridge/kk_bridge.log (carga, escucha, recepciones, imports).
-- Krita: espera hasta 3s a que CaptureScreenshot termine de escribir el PNG.
+- C#: 3 TCP attempts with 500ms pause; clear message when Krita is not listening.
+- Krita: log at UserData/krita_bridge/kk_bridge.log (loads, listens, receives, imports).
+- Krita: waits up to 3s for CaptureScreenshot to finish writing the PNG.
 
 ## v1.1.0 (working install)
 - Compiled KK_KritaBridge.dll targeting net35 (v2.0.50727), matching game runtime.
@@ -101,8 +101,8 @@
 
 ## v1.0.0 (first release)
 - Initial CharaStudio -> Krita one-click bridge.
-- Single `F12` hotkey import current scene as a new layer.
+- Single `F12` hotkey imports the current scene as a new layer.
 - No watcher; direct TCP socket between plugin and Krita script.
-- Keep `latest.png` output at `UserData/krita_bridge/latest.png`.
+- Keeps `latest.png` output at `UserData/krita_bridge/latest.png`.
 - Added deploy/run-bridge.bat for Krita bootstrap.
 - Supports `dotnet build -c Release`.
