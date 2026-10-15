@@ -211,27 +211,17 @@ namespace KK_KritaBridge
             try
             {
                 int S = 32;
-                float R = 6f;
                 Color bg = new Color(0.25f, 0.25f, 0.25f, 1f);
                 Texture2D dst = new Texture2D(S, S);
                 for (int y = 0; y < S; y++)
                 {
                     for (int x = 0; x < S; x++)
                     {
-                        bool inside = true;
-                        float cx = Mathf.Min((float)x, (float)(S - 1 - x));
-                        float cy = Mathf.Min((float)y, (float)(S - 1 - y));
-                        if (cx < R && cy < R)
-                        {
-                            float dx = R - cx;
-                            float dy = R - cy;
-                            if (dx * dx + dy * dy > R * R) inside = false;
-                        }
                         float u = (float)x / (float)(S - 1);
                         float v = (float)y / (float)(S - 1);
                         Color sc = src.GetPixelBilinear(u, v);
                         Color outc = sc * sc.a + bg * (1f - sc.a);
-                        if (!inside) outc.a = 0f;
+                        outc.a = 1f;
                         dst.SetPixel(x, y, outc);
                     }
                 }
