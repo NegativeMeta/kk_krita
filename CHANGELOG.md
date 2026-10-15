@@ -1,5 +1,10 @@
 # ChangeLog
 
+## v1.5.1 (posicion manual)
+- La barra del Studio es IMGUI (sin botones UGUI): anclaje automatico imposible.
+- Tamano configurable (UI > ButtonSize, 64 por defecto) y DockFind off por defecto.
+- Arrastrar a mano junto a Find; la posicion se guarda al capturar.
+
 ## v1.5.0 (anclado a Find)
 - El boton se pega a la celda izquierda de Find, mismo tamano, a cualquier resolucion.
 - Toggle UI > DockFind (off = flotante arrastrable manual).

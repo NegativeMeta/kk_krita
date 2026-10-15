@@ -10,7 +10,7 @@ using UnityEngine.UI;
 
 namespace KK_KritaBridge
 {
-    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.5.0")]
+    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.5.1")]
     public class KKOneClick : BaseUnityPlugin
     {
         ConfigEntry<KeyCode> CaptureKey;
@@ -20,6 +20,7 @@ namespace KK_KritaBridge
         ConfigEntry<bool> ShowButton;
         ConfigEntry<int> BtnX;
         ConfigEntry<int> BtnY;
+        ConfigEntry<int> BtnSize;
         ConfigEntry<bool> DockFind;
         RectTransform findRect;
         int scanCooldown;
@@ -38,8 +39,9 @@ namespace KK_KritaBridge
             ShowButton  = Config.Bind("UI", "ShowButton", true, "Muestra el boton flotante para enviar a Krita");
             BtnX  = Config.Bind("UI", "ButtonX", 8, "Posicion X del boton");
             BtnY  = Config.Bind("UI", "ButtonY", 320, "Posicion Y del boton");
-            DockFind  = Config.Bind("UI", "DockFind", true, "Pegar el boton al lado de Find");
-            windowRect = new Rect(BtnX.Value, BtnY.Value, 52, 52);
+            BtnSize  = Config.Bind("UI", "ButtonSize", 64, "Tamano del boton");
+            DockFind  = Config.Bind("UI", "DockFind", false, "Pegar el boton al lado de Find");
+            windowRect = new Rect(BtnX.Value, BtnY.Value, BtnSize.Value, BtnSize.Value);
             LoadIcon();
             BridgeDir   = Config.Bind("Bridge", "BridgeDir", "UserData/krita_bridge");
             TargetHost  = Config.Bind("Bridge", "Host", "127.0.0.1");
