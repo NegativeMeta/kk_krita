@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 namespace KK_KritaBridge
 {
-    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.6.3")]
+    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.6.4")]
     public class KKOneClick : BaseUnityPlugin
     {
         ConfigEntry<KeyCode> CaptureKey;
@@ -33,9 +33,11 @@ namespace KK_KritaBridge
         Rect windowRect;
         GUIStyle emptyWinStyle;
         GUIStyle iconBtnStyle;
-        ConfigEntry<int> ButtonBg;
+        ConfigEntry<int> ButtonBgTop;
+        ConfigEntry<int> ButtonBgBottom;
         ConfigEntry<bool> AutoMatchBg;
-        int lastBg = -1;
+        int lastBgTop = -1;
+        int lastBgBottom = -1;
         Texture2D nativeIcon;
 
         const string latest = "latest.png";
@@ -49,8 +51,9 @@ namespace KK_KritaBridge
             BtnY  = Config.Bind("UI", "ButtonY", 593, "Posicion Y del boton");
             BtnSize  = Config.Bind("UI", "ButtonSize", 42, "Tamano del boton");
             DockFind  = Config.Bind("UI", "DockFind", false, "Pegar el boton al lado de Find");
-            ButtonBg  = Config.Bind("UI", "ButtonBg", 60, "Brillo del fondo del boton 0-255");
-            AutoMatchBg  = Config.Bind("UI", "AutoMatchBg", true, "Copiar el gris del boton Find automaticamente");
+            ButtonBgTop  = Config.Bind("UI", "ButtonBgTop", 120, "Gris superior del boton 0-255");
+            ButtonBgBottom  = Config.Bind("UI", "ButtonBgBottom", 51, "Gris inferior del boton 0-255");
+            AutoMatchBg  = Config.Bind("UI", "AutoMatchBg", true, "Copiar el degradado del boton Find automaticamente");
             windowRect = new Rect(BtnX.Value, BtnY.Value, BtnSize.Value, BtnSize.Value);
             LoadIcon();
             BridgeDir   = Config.Bind("Bridge", "BridgeDir", "UserData/krita_bridge");
@@ -63,10 +66,11 @@ namespace KK_KritaBridge
         {
             if (Input.GetKeyDown(CaptureKey.Value)) CapturarYEnviar();
             if (!nativeOk && ((frame++ % 120) == 0)) nativeOk = TryRegisterNativeButton();
-            if (nativeOk && nativeIcon != null && ButtonBg.Value != lastBg)
+            if (nativeOk && nativeIcon != null && (ButtonBgTop.Value != lastBgTop || ButtonBgBottom.Value != lastBgBottom))
             {
-                lastBg = ButtonBg.Value;
-                RenderIcon(nativeIcon, kritaIcon, (float)lastBg / 255f);
+                lastBgTop = ButtonBgTop.Value;
+                lastBgBottom = ButtonBgBottom.Value;
+                RenderIcon(nativeIcon, kritaIcon, (float)lastBgTop / 255f, (float)lastBgBottom / 255f);
             }
         }
 
@@ -202,7 +206,8 @@ namespace KK_KritaBridge
                 if (kritaIcon == null) return false;
                 nativeIcon = BakeToolbarIcon(kritaIcon);
                 if (nativeIcon == null) return false;
-                lastBg = ButtonBg.Value;
+                lastBgTop = ButtonBgTop.Value;
+                lastBgBottom = ButtonBgBottom.Value;
                 Type actionType = m.GetParameters()[1].ParameterType;
                 Delegate onClick = Delegate.CreateDelegate(actionType, this, "CapturarYEnviar");
                 object result = m.Invoke(null, new object[] { nativeIcon, onClick });
@@ -221,7 +226,7 @@ namespace KK_KritaBridge
         Texture2D BakeToolbarIcon(Texture2D src)
         {
             Texture2D dst = new Texture2D(32, 32);
-            if (!RenderIcon(dst, src, (float)ButtonBg.Value / 255f))
+            if (!RenderIcon(dst, src, (float)ButtonBgTop.Value / 255f, (float)ButtonBgBottom.Value / 255f))
             {
                 UnityEngine.Object.Destroy(dst);
                 return null;
@@ -229,15 +234,17 @@ namespace KK_KritaBridge
             return dst;
         }
 
-        bool RenderIcon(Texture2D dst, Texture2D src, float bgV)
+        bool RenderIcon(Texture2D dst, Texture2D src, float topV, float botV)
         {
             try
             {
                 int S = 32;
-                Color bg = new Color(bgV, bgV, bgV, 1f);
                 float m0 = 0.06f, m1 = 0.94f;
                 for (int y = 0; y < S; y++)
                 {
+                    float t = (float)y / (float)(S - 1);
+                    float g = botV + (topV - botV) * t;
+                    Color bg = new Color(g, g, g, 1f);
                     for (int x = 0; x < S; x++)
                     {
                         float u = m0 + ((float)x / (float)(S - 1)) * (m1 - m0);
@@ -344,18 +351,42 @@ namespace KK_KritaBridge
                     Texture2D t = im.sprite.texture;
                     if (t == null) continue;
                     Rect r = im.sprite.rect;
-                    Color c = t.GetPixel((int)r.x + 2, (int)r.y + 2);
-                    int gray = (int)(c.grayscale * 255f);
-                    if (gray < 8 || gray > 247) continue;
-                    ButtonBg.Value = gray;
-                    Logger.LogInfo("KKBridge: fondo auto = " + gray);
-                    return;
+                    int sx = (int)r.x + 3;
+                    int topY = (int)(r.y + r.height) - 4;
+                    int botY = (int)r.y + 3;
+                    int top = SampleGray(t, sx, topY);
+                    int bot = SampleGray(t, sx, botY);
+                    bool ok = false;
+                    if (top >= 0) { ButtonBgTop.Value = top; ok = true; }
+                    if (bot >= 0) { ButtonBgBottom.Value = bot; ok = true; }
+                    if (ok)
+                    {
+                        Logger.LogInfo("KKBridge: degradado auto = " + ButtonBgTop.Value + "/" + ButtonBgBottom.Value);
+                        return;
+                    }
+                    continue;
                 }
                 Logger.LogInfo("KKBridge: no se pudo muestrear fondo (textura no legible?)");
             }
             catch (Exception e)
             {
                 Logger.LogInfo("KKBridge: muestreo fondo: " + e.Message);
+            }
+        }
+
+        int SampleGray(Texture2D t, int x, int y)
+        {
+            try
+            {
+                if (x < 0 || y < 0 || x >= t.width || y >= t.height) return -1;
+                Color c = t.GetPixel(x, y);
+                int gray = (int)(c.grayscale * 255f);
+                if (gray < 8 || gray > 247) return -1;
+                return gray;
+            }
+            catch (Exception)
+            {
+                return -1;
             }
         }
 

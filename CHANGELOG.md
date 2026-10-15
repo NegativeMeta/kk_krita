@@ -1,5 +1,9 @@
 # ChangeLog
 
+## v1.6.4 (degradado)
+- Fondo con degradado vertical claro-arriba/oscuro-abajo como los originales.
+- Auto-muestreo superior+inferior del boton Find; override manual Top/Bottom.
+
 ## v1.6.3 (gris auto)
 - Auto-muestrea el gris del boton Find real y lo aplica (override manual: UI > ButtonBg).
 - Default 60 + re-render en vivo al cambiar el valor.
