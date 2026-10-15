@@ -1,5 +1,8 @@
 # ChangeLog
 
+## v1.6.5 (margen icono)
+- IconMargin % configurable con vista en vivo (12 por defecto).
+
 ## v1.6.4 (degradado)
 - Fondo con degradado vertical claro-arriba/oscuro-abajo como los originales.
 - Auto-muestreo superior+inferior del boton Find; override manual Top/Bottom.

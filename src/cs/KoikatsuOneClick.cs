@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 namespace KK_KritaBridge
 {
-    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.6.4")]
+    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.6.5")]
     public class KKOneClick : BaseUnityPlugin
     {
         ConfigEntry<KeyCode> CaptureKey;
@@ -35,9 +35,11 @@ namespace KK_KritaBridge
         GUIStyle iconBtnStyle;
         ConfigEntry<int> ButtonBgTop;
         ConfigEntry<int> ButtonBgBottom;
+        ConfigEntry<int> IconMargin;
         ConfigEntry<bool> AutoMatchBg;
         int lastBgTop = -1;
         int lastBgBottom = -1;
+        int lastMargin = -1;
         Texture2D nativeIcon;
 
         const string latest = "latest.png";
@@ -53,6 +55,7 @@ namespace KK_KritaBridge
             DockFind  = Config.Bind("UI", "DockFind", false, "Pegar el boton al lado de Find");
             ButtonBgTop  = Config.Bind("UI", "ButtonBgTop", 120, "Gris superior del boton 0-255");
             ButtonBgBottom  = Config.Bind("UI", "ButtonBgBottom", 51, "Gris inferior del boton 0-255");
+            IconMargin  = Config.Bind("UI", "IconMargin", 12, "Margen del icono en %");
             AutoMatchBg  = Config.Bind("UI", "AutoMatchBg", true, "Copiar el degradado del boton Find automaticamente");
             windowRect = new Rect(BtnX.Value, BtnY.Value, BtnSize.Value, BtnSize.Value);
             LoadIcon();
@@ -66,11 +69,12 @@ namespace KK_KritaBridge
         {
             if (Input.GetKeyDown(CaptureKey.Value)) CapturarYEnviar();
             if (!nativeOk && ((frame++ % 120) == 0)) nativeOk = TryRegisterNativeButton();
-            if (nativeOk && nativeIcon != null && (ButtonBgTop.Value != lastBgTop || ButtonBgBottom.Value != lastBgBottom))
+            if (nativeOk && nativeIcon != null && (ButtonBgTop.Value != lastBgTop || ButtonBgBottom.Value != lastBgBottom || IconMargin.Value != lastMargin))
             {
                 lastBgTop = ButtonBgTop.Value;
                 lastBgBottom = ButtonBgBottom.Value;
-                RenderIcon(nativeIcon, kritaIcon, (float)lastBgTop / 255f, (float)lastBgBottom / 255f);
+                lastMargin = IconMargin.Value;
+                RenderIcon(nativeIcon, kritaIcon, (float)lastBgTop / 255f, (float)lastBgBottom / 255f, (float)lastMargin / 100f);
             }
         }
 
@@ -208,6 +212,7 @@ namespace KK_KritaBridge
                 if (nativeIcon == null) return false;
                 lastBgTop = ButtonBgTop.Value;
                 lastBgBottom = ButtonBgBottom.Value;
+                lastMargin = IconMargin.Value;
                 Type actionType = m.GetParameters()[1].ParameterType;
                 Delegate onClick = Delegate.CreateDelegate(actionType, this, "CapturarYEnviar");
                 object result = m.Invoke(null, new object[] { nativeIcon, onClick });
@@ -226,7 +231,7 @@ namespace KK_KritaBridge
         Texture2D BakeToolbarIcon(Texture2D src)
         {
             Texture2D dst = new Texture2D(32, 32);
-            if (!RenderIcon(dst, src, (float)ButtonBgTop.Value / 255f, (float)ButtonBgBottom.Value / 255f))
+            if (!RenderIcon(dst, src, (float)ButtonBgTop.Value / 255f, (float)ButtonBgBottom.Value / 255f, (float)IconMargin.Value / 100f))
             {
                 UnityEngine.Object.Destroy(dst);
                 return null;
@@ -234,12 +239,12 @@ namespace KK_KritaBridge
             return dst;
         }
 
-        bool RenderIcon(Texture2D dst, Texture2D src, float topV, float botV)
+        bool RenderIcon(Texture2D dst, Texture2D src, float topV, float botV, float mrg)
         {
             try
             {
                 int S = 32;
-                float m0 = 0.06f, m1 = 0.94f;
+                float m0 = mrg, m1 = 1f - mrg;
                 for (int y = 0; y < S; y++)
                 {
                     float t = (float)y / (float)(S - 1);
