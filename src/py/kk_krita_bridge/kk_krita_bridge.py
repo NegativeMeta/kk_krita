@@ -124,6 +124,9 @@ try:
 
         @_Slot(str)
         def importCapture(self, payload):
+            if payload.startswith("LIVE "):
+                self.importLive(payload[7:].strip())
+                return
             if not payload.startswith("IMPORT "):
                 return
             path = payload[7:].strip()
@@ -171,6 +174,69 @@ try:
                 QMessageBox.warning(None, "KK Bridge", "No se pudo importar:\n%s" % ex)
                 return
             _log("import ok: %s" % path)
+
+    def _load_pixels(self, path):
+        try:
+            qimg = QImage()
+            if not qimg.load(path):
+                return None
+            if qimg.format() != QImage.Format.Format_ARGB32:
+                qimg = qimg.convertToFormat(QImage.Format.Format_ARGB32)
+            w, h = qimg.width(), qimg.height()
+            ptr = qimg.constBits()
+            if ptr is None:
+                return None
+            return (QByteArray(ptr.asstring(qimg.sizeInBytes())), w, h)
+        except Exception as ex:
+            _log("pixels fallo: %s" % ex)
+            return None
+
+    def _find_layer(self, node, name):
+        try:
+            if node.name() == name:
+                return node
+            for child in node.childNodes():
+                found = self._find_layer(child, name)
+                if found is not None:
+                    return found
+        except Exception:
+            pass
+        return None
+
+    @_Slot(str)
+    def importLive(self, path):
+        for _ in range(12):
+            if path and os.path.exists(path):
+                break
+            time.sleep(0.25)
+        if not path or not os.path.exists(path):
+            _log("live: falta archivo")
+            return
+        doc = Krita.instance().activeDocument()
+        if doc is None:
+            return
+        px = self._load_pixels(path)
+        if px is None:
+            _log("live: no se pudo leer")
+            return
+        data, w, h = px
+        try:
+            layer = self._find_layer(doc.rootNode(), "KK live")
+            if layer is None:
+                layer = doc.createNode("KK live", "paintlayer")
+                if layer is None:
+                    return
+                doc.rootNode().addChildNode(layer, None)
+                doc.setActiveNode(layer)
+            layer.setPixelData(data, 0, 0, w, h)
+            try:
+                doc.refreshProjection()
+            except Exception:
+                pass
+        except Exception as ex:
+            _log("live fallo: %s" % ex)
+            return
+        _log("live ok")
 
     _log("registrando extension")
     Krita.instance().addExtension(KoikatsuBridgeExtension(Krita.instance()))

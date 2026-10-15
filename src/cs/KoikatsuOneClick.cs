@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 namespace KK_KritaBridge
 {
-    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.6.6")]
+    [BepInPlugin("johiny.kkritabridge", "KK Krita One Click", "1.7.0")]
     public class KKOneClick : BaseUnityPlugin
     {
         ConfigEntry<KeyCode> CaptureKey;
@@ -28,6 +28,15 @@ namespace KK_KritaBridge
         bool hideOwnUI;
         bool nativeOk;
         int frame;
+        bool liveOn;
+        bool liveToggleOk;
+        float nextLiveAt;
+        float liveBackoffUntil;
+        ConfigEntry<int> LiveIntervalMs;
+        ConfigEntry<int> LiveThreshold;
+        RenderTexture miniRT;
+        Texture2D miniTex;
+        Color[] miniPrev;
         const int windowId = 987121;
         Texture2D kritaIcon;
         Rect windowRect;
@@ -62,6 +71,8 @@ namespace KK_KritaBridge
             BridgeDir   = Config.Bind("Bridge", "BridgeDir", "UserData/krita_bridge");
             TargetHost  = Config.Bind("Bridge", "Host", "127.0.0.1");
             TargetPort  = Config.Bind("Bridge", "Port", 9184);
+            LiveIntervalMs  = Config.Bind("Live", "IntervalMs", 500, "Intervalo del modo live en ms");
+            LiveThreshold  = Config.Bind("Live", "ThresholdPct", 2, "% de pixeles que dispara envio");
             Logger.LogInfo("KK Krita One Click ready");
         }
 
@@ -69,6 +80,12 @@ namespace KK_KritaBridge
         {
             if (Input.GetKeyDown(CaptureKey.Value)) CapturarYEnviar();
             if (!nativeOk && ((frame++ % 120) == 0)) nativeOk = TryRegisterNativeButton();
+            if (!liveToggleOk && ((frame++ % 240) == 0)) liveToggleOk = TryRegisterLiveToggle();
+            if (liveOn && Time.realtimeSinceStartup >= nextLiveAt)
+            {
+                nextLiveAt = Time.realtimeSinceStartup + (float)LiveIntervalMs.Value / 1000f;
+                LiveTick();
+            }
             if (nativeOk && nativeIcon != null && (ButtonBgTop.Value != lastBgTop || ButtonBgBottom.Value != lastBgBottom || IconMargin.Value != lastMargin))
             {
                 lastBgTop = ButtonBgTop.Value;
@@ -404,22 +421,8 @@ namespace KK_KritaBridge
             }
         }
 
-        bool CaptureCameraPng(string file)
+        List<Canvas> HideCanvases()
         {
-            Camera cam = Camera.main;
-            if (cam == null)
-            {
-                return false;
-            }
-            int w = Screen.width;
-            int h = Screen.height;
-            RenderTexture rt = new RenderTexture(w, h, 24);
-            RenderTexture prevTarget = cam.targetTexture;
-            RenderTexture prevActive = RenderTexture.active;
-            foreach (Camera c in Camera.allCameras)
-            {
-                Logger.LogInfo("CAM name=" + c.name + " enabled=" + c.enabled + " depth=" + c.depth + " rect=" + c.rect);
-            }
             List<Canvas> hiddenCanvases = new List<Canvas>();
             try
             {
@@ -438,6 +441,180 @@ namespace KK_KritaBridge
             {
                 Logger.LogError("Canvas hide failed: " + e.Message);
             }
+            return hiddenCanvases;
+        }
+
+        void ShowCanvases(List<Canvas> hiddenCanvases)
+        {
+            if (hiddenCanvases == null) return;
+            foreach (Canvas cv in hiddenCanvases)
+            {
+                try { if (cv != null) cv.enabled = true; }
+                catch (Exception) { }
+            }
+        }
+
+        void LiveTick()
+        {
+            try
+            {
+                if (Time.realtimeSinceStartup < liveBackoffUntil) return;
+                if (!SceneChanged()) return;
+                string baseDir = Path.Combine(Application.dataPath, "..");
+                string bridge = Path.Combine(baseDir, BridgeDir.Value);
+                Directory.CreateDirectory(bridge);
+                string file = Path.Combine(bridge, latest);
+                if (!CaptureCameraPng(file, false)) return;
+                if (!SendLine("LIVE " + file))
+                {
+                    liveBackoffUntil = Time.realtimeSinceStartup + 5f;
+                    Logger.LogError("Live: Krita no escucha, reintento en 5s");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.LogError("Live tick failed: " + e.Message);
+            }
+        }
+
+        bool SceneChanged()
+        {
+            try
+            {
+                Camera cam = Camera.main;
+                if (cam == null) return true;
+                int w = 160, h = 90;
+                if (miniRT == null || miniTex == null)
+                {
+                    miniRT = new RenderTexture(w, h, 16);
+                    miniTex = new Texture2D(w, h, TextureFormat.RGB24, false);
+                    miniPrev = null;
+                }
+                List<Canvas> hidden = HideCanvases();
+                try
+                {
+                    RenderTexture prevT = cam.targetTexture;
+                    RenderTexture prevA = RenderTexture.active;
+                    cam.targetTexture = miniRT;
+                    cam.Render();
+                    RenderTexture.active = miniRT;
+                    miniTex.ReadPixels(new Rect(0, 0, w, h), 0, 0);
+                    miniTex.Apply();
+                    cam.targetTexture = prevT;
+                    RenderTexture.active = prevA;
+                }
+                finally
+                {
+                    ShowCanvases(hidden);
+                }
+                Color[] cur = miniTex.GetPixels();
+                if (miniPrev == null || miniPrev.Length != cur.Length) { miniPrev = cur; return true; }
+                int changed = 0;
+                for (int i = 0; i < cur.Length; i++)
+                {
+                    Color a = cur[i], b = miniPrev[i];
+                    if (Mathf.Abs(a.r - b.r) + Mathf.Abs(a.g - b.g) + Mathf.Abs(a.b - b.b) > 0.06f) changed++;
+                }
+                miniPrev = cur;
+                int pct = (changed * 100) / cur.Length;
+                return pct >= LiveThreshold.Value;
+            }
+            catch (Exception e)
+            {
+                Logger.LogError("SceneChanged failed: " + e.Message);
+                return true;
+            }
+        }
+
+        bool SendLine(string msg)
+        {
+            try
+            {
+                using (TcpClient client = new TcpClient(TargetHost.Value, TargetPort.Value))
+                using (NetworkStream stream = client.GetStream())
+                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8))
+                {
+                    writer.Write(msg);
+                    writer.Flush();
+                }
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        void OnLiveToggle(bool on)
+        {
+            liveOn = on;
+            miniPrev = null;
+            if (on)
+            {
+                nextLiveAt = 0f;
+                liveBackoffUntil = 0f;
+                Logger.LogInfo("KKBridge: live activado");
+            }
+            else Logger.LogInfo("KKBridge: live detenido");
+        }
+
+        bool TryRegisterLiveToggle()
+        {
+            try
+            {
+                Assembly kkapi = null;
+                foreach (Assembly a in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    if (a.GetName().Name == "KKAPI") { kkapi = a; break; }
+                }
+                if (kkapi == null) return false;
+                Type t = kkapi.GetType("KKAPI.Studio.UI.CustomToolbarButtons");
+                if (t == null) return false;
+                MethodInfo m = null;
+                MethodInfo[] methods = t.GetMethods();
+                foreach (MethodInfo cand in methods)
+                {
+                    if (cand.Name == "AddLeftToolbarToggle" && cand.IsStatic && cand.IsPublic)
+                    {
+                        ParameterInfo[] ps = cand.GetParameters();
+                        if (ps.Length == 3 && ps[0].ParameterType == typeof(Texture2D)) { m = cand; break; }
+                    }
+                }
+                if (m == null) return false;
+                if (kritaIcon == null) return false;
+                Texture2D icon32 = BakeToolbarIcon(kritaIcon);
+                if (icon32 == null) return false;
+                Type cbType = m.GetParameters()[2].ParameterType;
+                Delegate cb = Delegate.CreateDelegate(cbType, this, "OnLiveToggle");
+                object result = m.Invoke(null, new object[] { icon32, false, cb });
+                if (result == null) return false;
+                Logger.LogInfo("KKBridge: toggle live registrado en toolbar");
+                return true;
+            }
+            catch (Exception e)
+            {
+                Logger.LogError("Live toggle failed: " + e.Message);
+                return false;
+            }
+        }
+
+        bool CaptureCameraPng(string file, bool verbose)
+        {
+            Camera cam = Camera.main;
+            if (cam == null)
+            {
+                return false;
+            }
+            int w = Screen.width;
+            int h = Screen.height;
+            RenderTexture rt = new RenderTexture(w, h, 24);
+            RenderTexture prevTarget = cam.targetTexture;
+            RenderTexture prevActive = RenderTexture.active;
+            if (verbose) foreach (Camera c in Camera.allCameras)
+            {
+                Logger.LogInfo("CAM name=" + c.name + " enabled=" + c.enabled + " depth=" + c.depth + " rect=" + c.rect);
+            }
+            List<Canvas> hiddenCanvases = HideCanvases();
             try
             {
                 hideOwnUI = true;
@@ -467,11 +644,7 @@ namespace KK_KritaBridge
                 hideOwnUI = false;
                 cam.targetTexture = prevTarget;
                 RenderTexture.active = prevActive;
-                foreach (Canvas cv in hiddenCanvases)
-                {
-                    try { if (cv != null) cv.enabled = true; }
-                    catch (Exception) { }
-                }
+                ShowCanvases(hiddenCanvases);
                 UnityEngine.Object.Destroy(rt);
             }
         }
@@ -490,7 +663,7 @@ namespace KK_KritaBridge
 
             try
             {
-                if (!CaptureCameraPng(file))
+                if (!CaptureCameraPng(file, true))
                 {
                     Application.CaptureScreenshot(file);
                 }

@@ -1,5 +1,10 @@
 # ChangeLog
 
+## v1.7.0 (modo live)
+- Toggle nativo en toolbar: captura cada IntervalMs (500) solo si cambia la escena.
+- Deteccion por mini-render 160x90 + diff (ThresholdPct 2); primer frame siempre se envia.
+- Krita actualiza la capa "KK live" in-place, sin popups; backoff 5s si Krita no escucha.
+
 ## v1.6.6 (margen correcto)
 - Fix: el margen ahora si achica el icono (antes hacia zoom invertido).
 
