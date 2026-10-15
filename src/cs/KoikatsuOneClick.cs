@@ -55,7 +55,7 @@ namespace KK_KritaBridge
             DockFind  = Config.Bind("UI", "DockFind", false, "Pegar el boton al lado de Find");
             ButtonBgTop  = Config.Bind("UI", "ButtonBgTop", 120, "Gris superior del boton 0-255");
             ButtonBgBottom  = Config.Bind("UI", "ButtonBgBottom", 51, "Gris inferior del boton 0-255");
-            IconMargin  = Config.Bind("UI", "IconMargin", 12, "Margen del icono en %");
+            IconMargin  = Config.Bind("UI", "IconMargin", 6, "Margen del icono en %");
             AutoMatchBg  = Config.Bind("UI", "AutoMatchBg", true, "Copiar el degradado del boton Find automaticamente");
             windowRect = new Rect(BtnX.Value, BtnY.Value, BtnSize.Value, BtnSize.Value);
             LoadIcon();
